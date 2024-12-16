@@ -1,9 +1,33 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Quotation, QuotationItem } from '../types';
 import { generateId } from '../utils/helpers';
 
+const QUOTATIONS_STORAGE_KEY = 'crm_quotations';
+
 export function useQuotations() {
-  const [quotations, setQuotations] = useState<Quotation[]>([]);
+  const [quotations, setQuotations] = useState<Quotation[]>(() => {
+    const savedQuotations = localStorage.getItem(QUOTATIONS_STORAGE_KEY);
+    if (savedQuotations) {
+      try {
+        const parsed = JSON.parse(savedQuotations);
+        // Convert date strings back to Date objects
+        return parsed.map((q: Quotation) => ({
+          ...q,
+          createdAt: new Date(q.createdAt),
+          validUntil: new Date(q.validUntil)
+        }));
+      } catch (error) {
+        console.error('Error parsing saved quotations:', error);
+        return [];
+      }
+    }
+    return [];
+  });
+
+  // Save quotations to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem(QUOTATIONS_STORAGE_KEY, JSON.stringify(quotations));
+  }, [quotations]);
 
   const calculateTotal = (items: QuotationItem[]) => {
     return items.reduce((sum, item) => sum + item.total, 0);

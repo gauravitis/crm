@@ -13,16 +13,17 @@ export interface Quotation {
   clientId: string;
   items: QuotationItem[];
   total: number;
-  status: 'draft' | 'sent' | 'accepted' | 'rejected';
+  status: 'draft' | 'sent' | 'approved' | 'rejected';
   createdAt: Date;
   validUntil: Date;
 }
 
 export interface QuotationItem {
-  id: string;
   description: string;
   quantity: number;
-  unitPrice: number;
+  price: number;
+  discount: number;
+  gst: number;
   total: number;
 }
 

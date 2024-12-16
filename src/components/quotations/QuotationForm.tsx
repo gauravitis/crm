@@ -1,241 +1,264 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Quotation, QuotationItem, Client, Item } from '../../types';
-import { Plus, Trash2 } from 'lucide-react';
-import { formatCurrency } from '../../utils/helpers';
+import React, { useState, useEffect } from 'react';
+import { Client, Item, QuotationItem } from '../../types';
+import { useItems } from '../../hooks/useItems';
+import { useClients } from '../../hooks/useClients';
 
 interface QuotationFormProps {
-  clients: Client[];
-  items: Item[];
-  onSubmit: (data: Omit<Quotation, 'id' | 'createdAt' | 'total'>) => void;
-  initialData?: Partial<Quotation>;
+  onSubmit: (data: any) => void;
+  initialData?: any;
 }
 
-export default function QuotationForm({ clients, items, onSubmit, initialData }: QuotationFormProps) {
-  const [formData, setFormData] = useState({
-    clientId: initialData?.clientId || '',
-    items: initialData?.items || [],
-    status: initialData?.status || 'draft',
-    validUntil: initialData?.validUntil ? new Date(initialData.validUntil).toISOString().split('T')[0] : '',
-  });
+export default function QuotationForm({ onSubmit, initialData }: QuotationFormProps) {
+  const { items } = useItems();
+  const { clients } = useClients();
+  const [clientId, setClientId] = useState(initialData?.clientId || '');
+  const [status, setStatus] = useState(initialData?.status || 'draft');
+  const [validUntil, setValidUntil] = useState(
+    initialData?.validUntil 
+      ? new Date(initialData.validUntil).toISOString().split('T')[0]
+      : new Date().toISOString().split('T')[0]
+  );
+  const [quotationItems, setQuotationItems] = useState<QuotationItem[]>(
+    initialData?.items || [{ description: '', quantity: 1, price: 0, discount: 0, gst: 18, total: 0 }]
+  );
+  const [suggestions, setSuggestions] = useState<Item[]>([]);
+  const [focusedItemIndex, setFocusedItemIndex] = useState<number | null>(null);
 
-  const [newItem, setNewItem] = useState<Partial<QuotationItem>>({
-    description: '',
-    quantity: 1,
-    unitPrice: 0,
-  });
+  const calculateItemTotal = (item: QuotationItem) => {
+    const subtotal = item.quantity * item.price;
+    const discountAmount = (subtotal * item.discount) / 100;
+    const afterDiscount = subtotal - discountAmount;
+    const gstAmount = (afterDiscount * item.gst) / 100;
+    return afterDiscount + gstAmount;
+  };
 
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [filteredItems, setFilteredItems] = useState<Item[]>([]);
-  const suggestionRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (suggestionRef.current && !suggestionRef.current.contains(event.target as Node)) {
-        setShowSuggestions(false);
-      }
+  const handleItemChange = (index: number, field: keyof QuotationItem, value: any) => {
+    const newItems = [...quotationItems];
+    newItems[index] = {
+      ...newItems[index],
+      [field]: value,
     };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const handleDescriptionChange = (value: string) => {
-    setNewItem(prev => ({ ...prev, description: value }));
-    if (value.trim()) {
-      const filtered = items.filter(item =>
-        item.name.toLowerCase().includes(value.toLowerCase()) ||
-        item.catalogueId.toLowerCase().includes(value.toLowerCase()) ||
-        item.sku.toLowerCase().includes(value.toLowerCase())
-      );
-      setFilteredItems(filtered);
-      setShowSuggestions(true);
-    } else {
-      setShowSuggestions(false);
-    }
+    // Recalculate total whenever any field changes
+    newItems[index].total = calculateItemTotal(newItems[index]);
+    setQuotationItems(newItems);
   };
 
-  const handleItemSelect = (item: Item) => {
-    setNewItem(prev => ({
-      ...prev,
-      description: item.name,
-      unitPrice: item.price,
-    }));
-    setShowSuggestions(false);
+  const handleAddItem = () => {
+    setQuotationItems([
+      ...quotationItems,
+      { description: '', quantity: 1, price: 0, discount: 0, gst: 18, total: 0 }
+    ]);
   };
 
-  const addItem = () => {
-    if (!newItem.description || !newItem.quantity || !newItem.unitPrice) return;
-    
-    const item: QuotationItem = {
-      id: Math.random().toString(36).substring(2),
-      description: newItem.description!,
-      quantity: newItem.quantity!,
-      unitPrice: newItem.unitPrice!,
-      total: newItem.quantity! * newItem.unitPrice!,
-    };
-
-    setFormData(prev => ({
-      ...prev,
-      items: [...prev.items, item],
-    }));
-
-    setNewItem({
-      description: '',
-      quantity: 1,
-      unitPrice: 0,
-    });
-  };
-
-  const removeItem = (id: string) => {
-    setFormData(prev => ({
-      ...prev,
-      items: prev.items.filter(item => item.id !== id),
-    }));
+  const handleRemoveItem = (index: number) => {
+    setQuotationItems(quotationItems.filter((_, i) => i !== index));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    onSubmit({
+      clientId,
+      status,
+      validUntil: new Date(validUntil),
+      items: quotationItems,
+    });
+  };
+
+  const handleDescriptionChange = (index: number, value: string) => {
+    handleItemChange(index, 'description', value);
+    
+    // Filter items for suggestions
+    if (value.trim()) {
+      const filtered = items.filter(item => 
+        item.name.toLowerCase().includes(value.toLowerCase()) ||
+        item.catalogueId.toLowerCase().includes(value.toLowerCase()) ||
+        item.sku.toLowerCase().includes(value.toLowerCase())
+      );
+      setSuggestions(filtered);
+    } else {
+      setSuggestions([]);
+    }
+  };
+
+  const handleSuggestionClick = (index: number, item: Item) => {
+    handleItemChange(index, 'description', item.name);
+    handleItemChange(index, 'price', item.price);
+    setSuggestions([]);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label htmlFor="client" className="block text-sm font-medium text-gray-700">
-          Client
-        </label>
+        <label className="block text-sm font-medium text-gray-700">Client</label>
         <select
-          id="client"
-          value={formData.clientId}
-          onChange={(e) => setFormData(prev => ({ ...prev, clientId: e.target.value }))}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          value={clientId}
+          onChange={(e) => setClientId(e.target.value)}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
           required
         >
           <option value="">Select a client</option>
-          {clients.map(client => (
+          {clients.map((client) => (
             <option key={client.id} value={client.id}>
-              {client.name} - {client.company}
+              {client.name}
             </option>
           ))}
         </select>
       </div>
 
       <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Items</h3>
-        <div className="space-y-4">
-          {formData.items.map(item => (
-            <div key={item.id} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
-              <div className="flex-1">
-                <p className="font-medium">{item.description}</p>
-                <p className="text-sm text-gray-500">
-                  {item.quantity} x {formatCurrency(item.unitPrice)} = {formatCurrency(item.total)}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => removeItem(item.id)}
-                className="text-red-600 hover:text-red-900"
-              >
-                <Trash2 className="h-5 w-5" />
-              </button>
-            </div>
-          ))}
-
-          <div className="grid grid-cols-3 gap-4">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Description"
-                value={newItem.description}
-                onChange={(e) => handleDescriptionChange(e.target.value)}
-                onFocus={() => newItem.description && setShowSuggestions(true)}
-                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              />
-              {showSuggestions && (
-                <div 
-                  ref={suggestionRef}
-                  className="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm"
-                >
-                  {filteredItems.length > 0 ? (
-                    filteredItems.map((item) => (
-                      <div
-                        key={item.id}
-                        className="cursor-pointer hover:bg-blue-50 px-4 py-2"
-                        onClick={() => handleItemSelect(item)}
-                      >
-                        <div className="font-medium">{item.name}</div>
-                        <div className="text-sm text-gray-500">
-                          SKU: {item.sku} | Price: {formatCurrency(item.price)}
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="px-4 py-2 text-sm text-gray-500">No items found</div>
-                  )}
-                </div>
-              )}
-            </div>
-            <input
-              type="number"
-              placeholder="Quantity"
-              value={newItem.quantity}
-              onChange={(e) => setNewItem(prev => ({ ...prev, quantity: parseInt(e.target.value) }))}
-              className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-            />
-            <input
-              type="number"
-              placeholder="Unit Price"
-              value={newItem.unitPrice}
-              onChange={(e) => setNewItem(prev => ({ ...prev, unitPrice: parseFloat(e.target.value) }))}
-              className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={addItem}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-600 bg-blue-100 hover:bg-blue-200"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Item
-          </button>
-        </div>
+        <label className="block text-sm font-medium text-gray-700">Status</label>
+        <select
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+        >
+          <option value="draft">Draft</option>
+          <option value="sent">Sent</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select>
       </div>
 
       <div>
-        <label htmlFor="validUntil" className="block text-sm font-medium text-gray-700">
-          Valid Until
-        </label>
+        <label className="block text-sm font-medium text-gray-700">Valid Until</label>
         <input
           type="date"
-          id="validUntil"
-          value={formData.validUntil}
-          onChange={(e) => setFormData(prev => ({ ...prev, validUntil: e.target.value }))}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          value={validUntil}
+          onChange={(e) => setValidUntil(e.target.value)}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
           required
         />
       </div>
 
       <div>
-        <label htmlFor="status" className="block text-sm font-medium text-gray-700">
-          Status
-        </label>
-        <select
-          id="status"
-          value={formData.status}
-          onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as Quotation['status'] }))}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+        <label className="block text-sm font-medium text-gray-700">Items</label>
+        <div className="mt-2">
+          {/* Headers for the columns */}
+          <div className="flex space-x-2 mb-2 px-1">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700">Description</label>
+            </div>
+            <div className="w-20">
+              <label className="block text-sm font-medium text-gray-700">Quantity</label>
+            </div>
+            <div className="w-24">
+              <label className="block text-sm font-medium text-gray-700">Price (₹)</label>
+            </div>
+            <div className="w-24">
+              <label className="block text-sm font-medium text-gray-700">Discount (%)</label>
+            </div>
+            <div className="w-20">
+              <label className="block text-sm font-medium text-gray-700">GST (%)</label>
+            </div>
+            <div className="w-24">
+              <label className="block text-sm font-medium text-gray-700">Total (₹)</label>
+            </div>
+            <div className="w-16"></div> {/* Space for remove button */}
+          </div>
+
+          <div className="space-y-2">
+            {quotationItems.map((item, index) => (
+              <div key={index} className="flex space-x-2 items-start">
+                <div className="flex-1 relative">
+                  <input
+                    type="text"
+                    value={item.description}
+                    onChange={(e) => handleDescriptionChange(index, e.target.value)}
+                    onFocus={() => setFocusedItemIndex(index)}
+                    placeholder="Enter item description"
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    required
+                  />
+                  {focusedItemIndex === index && suggestions.length > 0 && (
+                    <div className="absolute z-10 w-full bg-white mt-1 rounded-md shadow-lg max-h-60 overflow-auto">
+                      {suggestions.map((suggestion) => (
+                        <div
+                          key={suggestion.id}
+                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                          onClick={() => handleSuggestionClick(index, suggestion)}
+                        >
+                          {suggestion.name} - {suggestion.catalogueId} ({suggestion.sku})
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                
+                <input
+                  type="number"
+                  value={item.quantity}
+                  onChange={(e) => handleItemChange(index, 'quantity', parseFloat(e.target.value) || 0)}
+                  placeholder="Qty"
+                  className="w-20 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  required
+                  min="1"
+                />
+                
+                <input
+                  type="number"
+                  value={item.price}
+                  onChange={(e) => handleItemChange(index, 'price', parseFloat(e.target.value) || 0)}
+                  placeholder="0.00"
+                  className="w-24 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  required
+                  min="0"
+                />
+
+                <input
+                  type="number"
+                  value={item.discount}
+                  onChange={(e) => handleItemChange(index, 'discount', parseFloat(e.target.value) || 0)}
+                  placeholder="0"
+                  className="w-24 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  required
+                  min="0"
+                  max="100"
+                />
+
+                <input
+                  type="number"
+                  value={item.gst}
+                  onChange={(e) => handleItemChange(index, 'gst', parseFloat(e.target.value) || 0)}
+                  placeholder="18"
+                  className="w-20 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  required
+                  min="0"
+                  max="100"
+                />
+
+                <div className="w-24 text-right font-medium text-gray-900 pt-2">
+                  ₹{item.total.toFixed(2)}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleRemoveItem(index)}
+                  className="text-red-600 hover:text-red-800 w-16 pt-2"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+        
+        <button
+          type="button"
+          onClick={handleAddItem}
+          className="mt-2 inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
         >
-          <option value="draft">Draft</option>
-          <option value="sent">Sent</option>
-          <option value="accepted">Accepted</option>
-          <option value="rejected">Rejected</option>
-        </select>
+          Add Item
+        </button>
+      </div>
+    </div>
+
+      <div className="text-right text-lg font-medium">
+        Total: ₹{quotationItems.reduce((sum, item) => sum + item.total, 0).toFixed(2)}
       </div>
 
       <div className="flex justify-end">
         <button
           type="submit"
-          className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
         >
           Save Quotation
         </button>
