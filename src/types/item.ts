@@ -5,5 +5,7 @@ export interface Item {
   sku: string;
   packSize: string;
   price: number;
+  quantity: number;
   createdAt: Date;
+  hsnCode: string;
 }

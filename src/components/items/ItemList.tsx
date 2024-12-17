@@ -28,10 +28,16 @@ export default function ItemList({ items, onEdit, onDelete }: ItemListProps) {
               SKU
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              HSN Code
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Pack Size
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Price
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Quantity
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Actions
@@ -49,33 +55,37 @@ export default function ItemList({ items, onEdit, onDelete }: ItemListProps) {
                   {item.name}
                 </button>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {item.catalogueId}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {item.sku}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {item.hsnCode}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {item.packSize}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {formatCurrency(item.price)}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <div className="flex space-x-3">
-                  <button
-                    onClick={() => onEdit(item)}
-                    className="text-blue-600 hover:text-blue-900"
-                  >
-                    <Edit2 className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => onDelete(item.id)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {item.quantity}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                <button
+                  onClick={() => onEdit(item)}
+                  className="text-blue-600 hover:text-blue-900 inline-flex items-center"
+                >
+                  <Edit2 className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => onDelete(item.id)}
+                  className="text-red-600 hover:text-red-900 inline-flex items-center"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
               </td>
             </tr>
           ))}

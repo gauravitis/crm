@@ -1,7 +1,7 @@
 import React from 'react';
-import { Client } from '../../types';
+import { Client } from '../../types/client';
 import { formatDate } from '../../utils/helpers';
-import { X, Mail, Phone, Building2, Calendar } from 'lucide-react';
+import { X, Mail, Phone, Building2, Calendar, MapPin } from 'lucide-react';
 
 interface ClientDetailsProps {
   client: Client;
@@ -58,6 +58,20 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
               </a>
             </div>
           </div>
+
+          {client.address && (
+            <div className="flex items-start text-gray-700">
+              <MapPin className="h-5 w-5 mr-3 mt-1 text-gray-400" />
+              <div>
+                <div className="text-sm font-medium text-gray-900">Address</div>
+                <div className="text-sm space-y-1">
+                  <div>{client.address.street}</div>
+                  <div>{client.address.city}, {client.address.state} {client.address.postalCode}</div>
+                  <div>{client.address.country}</div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center text-gray-700">
             <Calendar className="h-5 w-5 mr-3 text-gray-400" />

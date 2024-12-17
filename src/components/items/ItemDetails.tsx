@@ -1,7 +1,7 @@
 import React from 'react';
-import { Item } from '../../types';
+import { Item } from '../../types/client';
 import { formatDate, formatCurrency } from '../../utils/helpers';
-import { X, Package, Barcode, Calendar, DollarSign, Box } from 'lucide-react';
+import { X, Package, Barcode, Calendar, DollarSign, Box, Archive, Hash } from 'lucide-react';
 
 interface ItemDetailsProps {
   item: Item;
@@ -44,6 +44,14 @@ export default function ItemDetails({ item, onClose }: ItemDetailsProps) {
           </div>
 
           <div className="flex items-center text-gray-700">
+            <Hash className="h-5 w-5 mr-3 text-gray-400" />
+            <div>
+              <div className="text-sm font-medium text-gray-900">HSN Code</div>
+              <div className="text-sm">{item.hsnCode}</div>
+            </div>
+          </div>
+
+          <div className="flex items-center text-gray-700">
             <Box className="h-5 w-5 mr-3 text-gray-400" />
             <div>
               <div className="text-sm font-medium text-gray-900">Pack Size</div>
@@ -55,9 +63,15 @@ export default function ItemDetails({ item, onClose }: ItemDetailsProps) {
             <DollarSign className="h-5 w-5 mr-3 text-gray-400" />
             <div>
               <div className="text-sm font-medium text-gray-900">Price</div>
-              <div className="text-sm font-semibold text-green-600">
-                {formatCurrency(item.price)}
-              </div>
+              <div className="text-sm">{formatCurrency(item.price)}</div>
+            </div>
+          </div>
+
+          <div className="flex items-center text-gray-700">
+            <Archive className="h-5 w-5 mr-3 text-gray-400" />
+            <div>
+              <div className="text-sm font-medium text-gray-900">Quantity in Stock</div>
+              <div className="text-sm">{item.quantity}</div>
             </div>
           </div>
 

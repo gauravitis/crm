@@ -28,14 +28,26 @@ export default function QuotationDetails({ quotation, onClose }: QuotationDetail
           <h2 className="text-xl font-semibold text-gray-900">Quotation Details</h2>
           <div className="flex space-x-2">
             <button
-              onClick={() => generatePDF(quotation)}
+              onClick={() => {
+                if (client) {
+                  generatePDF(quotation, client);
+                } else {
+                  alert('Client information not found');
+                }
+              }}
               className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
             >
               <FileType className="h-4 w-4 mr-2" />
               Export PDF
             </button>
             <button
-              onClick={() => generateDOCX(quotation)}
+              onClick={() => {
+                if (client) {
+                  generateDOCX(quotation, client);
+                } else {
+                  alert('Client information not found');
+                }
+              }}
               className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               <FileText className="h-4 w-4 mr-2" />

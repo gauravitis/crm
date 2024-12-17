@@ -14,6 +14,8 @@ export default function ItemForm({ onSubmit, onCancel, initialData }: ItemFormPr
     sku: initialData?.sku || '',
     packSize: initialData?.packSize || '',
     price: initialData?.price || '',
+    quantity: initialData?.quantity || 0,
+    hsnCode: initialData?.hsnCode || '',
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -21,6 +23,7 @@ export default function ItemForm({ onSubmit, onCancel, initialData }: ItemFormPr
     onSubmit({
       ...formData,
       price: Number(formData.price),
+      quantity: Number(formData.quantity),
     });
   };
 
@@ -92,35 +95,73 @@ export default function ItemForm({ onSubmit, onCancel, initialData }: ItemFormPr
       </div>
 
       <div>
-        <label htmlFor="price" className="block text-sm font-medium text-gray-700">
-          Price
+        <label htmlFor="hsnCode" className="block text-sm font-medium text-gray-700">
+          HSN Code
         </label>
         <input
-          type="number"
-          name="price"
-          id="price"
+          type="text"
+          name="hsnCode"
+          id="hsnCode"
           required
-          min="0"
-          step="0.01"
-          value={formData.price}
+          value={formData.hsnCode}
           onChange={handleChange}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
         />
       </div>
 
-      <div className="flex justify-end space-x-3">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="price" className="block text-sm font-medium text-gray-700">
+            Price
+          </label>
+          <div className="mt-1 relative rounded-md shadow-sm">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <span className="text-gray-500 sm:text-sm">₹</span>
+            </div>
+            <input
+              type="number"
+              name="price"
+              id="price"
+              required
+              min="0"
+              step="0.01"
+              value={formData.price}
+              onChange={handleChange}
+              className="mt-1 block w-full pl-7 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="quantity" className="block text-sm font-medium text-gray-700">
+            Quantity in Stock
+          </label>
+          <input
+            type="number"
+            name="quantity"
+            id="quantity"
+            required
+            min="0"
+            value={formData.quantity}
+            onChange={handleChange}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          />
+        </div>
+      </div>
+
+      <div className="flex justify-end space-x-3 mt-6">
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+          className="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-50"
         >
           Cancel
         </button>
         <button
           type="submit"
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700"
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
         >
-          {initialData ? 'Update' : 'Add'} Item
+          {initialData ? 'Update' : 'Create'} Item
         </button>
       </div>
     </form>
