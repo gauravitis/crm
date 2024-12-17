@@ -11,6 +11,7 @@ import Clients from './pages/Clients';
 import Items from './pages/Items';
 import Quotations from './pages/Quotations';
 import Sales from './pages/Sales';
+import KanbanBoard from './pages/KanbanBoard';
 
 // Initialize QueryClient
 const queryClient = new QueryClient({
@@ -41,6 +42,7 @@ export default function App() {
                   <Route path="/items" element={<Items />} />
                   <Route path="/quotations" element={<Quotations />} />
                   <Route path="/sales" element={<Sales />} />
+                  <Route path="/tasks" element={<KanbanBoard />} />
                 </Routes>
               </main>
             </div>

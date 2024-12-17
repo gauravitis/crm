@@ -1,93 +1,169 @@
 import React, { useState } from 'react';
-import { Quotation } from '../types';
 import { useQuotations } from '../hooks/useQuotations';
-import { useClients } from '../hooks/useClients';
-import { useItems } from '../hooks/useItems';
-import QuotationList from '../components/quotations/QuotationList';
 import QuotationForm from '../components/quotations/QuotationForm';
-import { Plus } from 'lucide-react';
+import QuotationDetails from '../components/quotations/QuotationDetails';
+import { Quotation } from '../types';
+import { format } from 'date-fns';
+import { Trash2 } from 'lucide-react';
 
 export default function Quotations() {
   const { quotations, addQuotation, updateQuotation, deleteQuotation } = useQuotations();
-  const { clients } = useClients();
-  const { items } = useItems();
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
   const [editingQuotation, setEditingQuotation] = useState<Quotation | null>(null);
 
-  const handleSubmit = (data: Omit<Quotation, 'id' | 'createdAt' | 'total'>) => {
+  const handleSubmit = (data: any) => {
     if (editingQuotation) {
       updateQuotation(editingQuotation.id, data);
+      setEditingQuotation(null);
     } else {
       addQuotation(data);
     }
-    setIsFormOpen(false);
-    setEditingQuotation(null);
+    setShowForm(false);
   };
 
   const handleEdit = (quotation: Quotation) => {
     setEditingQuotation(quotation);
-    setIsFormOpen(true);
+    setShowForm(true);
+    setSelectedQuotation(null);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (e: React.MouseEvent, quotation: Quotation) => {
+    e.stopPropagation();
     if (window.confirm('Are you sure you want to delete this quotation?')) {
-      deleteQuotation(id);
+      deleteQuotation(quotation.id);
+      if (selectedQuotation?.id === quotation.id) {
+        setSelectedQuotation(null);
+      }
     }
   };
 
-  const handleCreateSale = (quotation: Quotation) => {
-    // TODO: Implement sale creation
-    console.log('Creating sale from quotation:', quotation);
+  const statusColors = {
+    draft: 'bg-gray-100 text-gray-800',
+    sent: 'bg-blue-100 text-blue-800',
+    approved: 'bg-green-100 text-green-800',
+    rejected: 'bg-red-100 text-red-800',
   };
 
   return (
-    <div className="py-6">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-semibold text-gray-900">Quotations</h1>
-          <button
-            onClick={() => setIsFormOpen(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Quotation
-          </button>
-        </div>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Quotations</h1>
+        <button
+          onClick={() => {
+            setShowForm(true);
+            setEditingQuotation(null);
+            setSelectedQuotation(null);
+          }}
+          className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        >
+          Create Quotation
+        </button>
+      </div>
 
-        {isFormOpen && (
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg p-6 max-w-4xl w-full">
-              <h2 className="text-lg font-medium mb-4">
-                {editingQuotation ? 'Edit Quotation' : 'Add New Quotation'}
+      {showForm && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-[1000px] shadow-lg rounded-md bg-white">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">
+                {editingQuotation ? 'Edit Quotation' : 'New Quotation'}
               </h2>
-              <QuotationForm
-                clients={clients}
-                items={items}
-                onSubmit={handleSubmit}
-                initialData={editingQuotation || undefined}
-              />
               <button
                 onClick={() => {
-                  setIsFormOpen(false);
+                  setShowForm(false);
                   setEditingQuotation(null);
                 }}
-                className="mt-4 text-sm text-gray-600 hover:text-gray-900"
+                className="text-gray-500 hover:text-gray-700"
               >
-                Cancel
+                ✕
               </button>
             </div>
+            <QuotationForm onSubmit={handleSubmit} initialData={editingQuotation} />
           </div>
-        )}
-
-        <div className="mt-8">
-          <QuotationList
-            quotations={quotations}
-            clients={clients}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onCreateSale={handleCreateSale}
-          />
         </div>
+      )}
+
+      {selectedQuotation && (
+        <QuotationDetails
+          quotation={selectedQuotation}
+          onClose={() => setSelectedQuotation(null)}
+        />
+      )}
+
+      <div className="bg-white shadow overflow-hidden rounded-lg">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Client
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Status
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Valid Until
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Total Amount
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {quotations.map((quotation) => (
+              <tr 
+                key={quotation.id}
+                className="hover:bg-gray-50 cursor-pointer"
+                onClick={() => setSelectedQuotation(quotation)}
+              >
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">
+                    {quotation.clientName || 'Unknown Client'}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`px-2 py-1 rounded-full text-xs ${statusColors[(quotation.status || 'draft') as keyof typeof statusColors]}`}>
+                    {quotation.status 
+                      ? quotation.status.charAt(0).toUpperCase() + quotation.status.slice(1)
+                      : 'Draft'
+                    }
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">
+                    {format(new Date(quotation.validUntil), 'dd/MM/yyyy')}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">
+                    ₹{quotation.items.reduce((sum, item) => sum + item.total, 0).toFixed(2)}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEdit(quotation);
+                      }}
+                      className="text-indigo-600 hover:text-indigo-900"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={(e) => handleDelete(e, quotation)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );

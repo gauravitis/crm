@@ -1,11 +1,12 @@
 import React from 'react';
-import { LayoutDashboard, Users, FileText, DollarSign, Settings, Package } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, DollarSign, Settings, Package, ClipboardList } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Clients', href: '/clients', icon: Users },
   { name: 'Items', href: '/items', icon: Package },
+  { name: 'Tasks', href: '/tasks', icon: ClipboardList },
   { name: 'Quotations', href: '/quotations', icon: FileText },
   { name: 'Sales', href: '/sales', icon: DollarSign },
   { name: 'Settings', href: '/settings', icon: Settings },
