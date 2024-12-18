@@ -51,16 +51,8 @@ export default function Clients() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <p className="text-red-500 text-xl">Error: {error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Retry
-          </button>
-        </div>
+      <div className="flex items-center justify-center h-screen text-red-500">
+        Error: {error}
       </div>
     );
   }
@@ -68,24 +60,30 @@ export default function Clients() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Clients</h1>
+        <h1 className="text-2xl font-semibold text-gray-900">Clients</h1>
         <button
           onClick={() => {
             setEditingClient(null);
             setIsModalOpen(true);
           }}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         >
           <Plus className="h-5 w-5 mr-2" />
           Add Client
         </button>
       </div>
 
-      <ClientList
-        clients={clients}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-      />
+      {clients && clients.length > 0 ? (
+        <ClientList
+          clients={clients}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+      ) : (
+        <div className="text-center py-12">
+          <p className="text-gray-500">No clients found. Add your first client to get started!</p>
+        </div>
+      )}
 
       <ClientModal
         isOpen={isModalOpen}

@@ -51,60 +51,57 @@ export default function Items() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <p className="text-red-500 text-xl">Error: {error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Retry
-          </button>
-        </div>
+      <div className="flex items-center justify-center h-screen text-red-500">
+        Error: {error}
       </div>
     );
   }
 
   return (
-    <div className="py-6">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-semibold text-gray-900">Items</h1>
-          <button
-            onClick={() => setIsFormOpen(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Item
-          </button>
-        </div>
-
-        {isFormOpen && (
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full">
-              <h2 className="text-lg font-medium mb-4">
-                {editingItem ? 'Edit Item' : 'Add New Item'}
-              </h2>
-              <ItemForm
-                onSubmit={handleSubmit}
-                onCancel={() => {
-                  setIsFormOpen(false);
-                  setEditingItem(null);
-                }}
-                initialData={editingItem || undefined}
-              />
-            </div>
-          </div>
-        )}
-
-        <div className="mt-6">
-          <ItemList
-            items={items}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
-        </div>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-semibold text-gray-900">Items</h1>
+        <button
+          onClick={() => {
+            setEditingItem(null);
+            setIsFormOpen(true);
+          }}
+          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        >
+          <Plus className="h-5 w-5 mr-2" />
+          Add Item
+        </button>
       </div>
+
+      {items && items.length > 0 ? (
+        <ItemList
+          items={items}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+      ) : (
+        <div className="text-center py-12">
+          <p className="text-gray-500">No items found. Add your first item to get started!</p>
+        </div>
+      )}
+
+      {isFormOpen && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h2 className="text-lg font-medium mb-4">
+              {editingItem ? 'Edit Item' : 'Add New Item'}
+            </h2>
+            <ItemForm
+              onSubmit={handleSubmit}
+              onCancel={() => {
+                setIsFormOpen(false);
+                setEditingItem(null);
+              }}
+              initialData={editingItem || undefined}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
