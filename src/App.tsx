@@ -12,6 +12,9 @@ import Items from './pages/Items';
 import Quotations from './pages/Quotations';
 import Sales from './pages/Sales';
 import KanbanBoard from './pages/KanbanBoard';
+import { Vendors } from './pages/Vendors';
+import { SalesInvoices } from './pages/SalesInvoices';
+import { PurchaseInvoices } from './pages/PurchaseInvoices';
 
 // Initialize QueryClient
 const queryClient = new QueryClient({
@@ -39,9 +42,12 @@ export default function App() {
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/clients" element={<Clients />} />
+                  <Route path="/vendors" element={<Vendors />} />
                   <Route path="/items" element={<Items />} />
                   <Route path="/quotations" element={<Quotations />} />
                   <Route path="/sales" element={<Sales />} />
+                  <Route path="/sales-invoices" element={<SalesInvoices />} />
+                  <Route path="/purchase-invoices" element={<PurchaseInvoices />} />
                   <Route path="/tasks" element={<KanbanBoard />} />
                 </Routes>
               </main>
