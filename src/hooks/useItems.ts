@@ -1,37 +1,34 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, Timestamp, query, orderBy } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Item } from '../types/item';
 
 export function useItems() {
-  const [items, setItems] = useState<Item[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch items on component mount
-  useEffect(() => {
-    const fetchItems = async () => {
-      try {
-        const itemsQuery = query(collection(db, 'items'), orderBy('createdAt', 'desc'));
-        const querySnapshot = await getDocs(itemsQuery);
-        const itemsData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate() || new Date(),
-        })) as Item[];
-        setItems(itemsData);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch items');
-        console.error('Error fetching items:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchItems();
+  const getItems = useCallback(async () => {
+    setLoading(true);
+    try {
+      const itemsQuery = query(collection(db, 'items'), orderBy('createdAt', 'desc'));
+      const querySnapshot = await getDocs(itemsQuery);
+      const itemsData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate() || new Date(),
+      })) as Item[];
+      return itemsData;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch items');
+      console.error('Error fetching items:', err);
+      return [];
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   const addItem = useCallback(async (itemData: Omit<Item, 'id' | 'createdAt'>) => {
+    setLoading(true);
     try {
       const docRef = await addDoc(collection(db, 'items'), {
         ...itemData,
@@ -44,39 +41,51 @@ export function useItems() {
         createdAt: new Date(),
       };
 
-      setItems(prev => [newItem, ...prev]);
       return newItem;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add item');
       console.error('Error adding item:', err);
-      throw err;
+      return null;
+    } finally {
+      setLoading(false);
     }
   }, []);
 
-  const updateItem = useCallback(async (id: string, data: Partial<Item>) => {
+  const updateItem = useCallback(async (id: string, itemData: Partial<Omit<Item, 'id' | 'createdAt'>>) => {
+    setLoading(true);
     try {
-      const docRef = doc(db, 'items', id);
-      await updateDoc(docRef, data);
-      setItems(prev => prev.map(item => 
-        item.id === id ? { ...item, ...data } : item
-      ));
+      const itemRef = doc(db, 'items', id);
+      await updateDoc(itemRef, itemData);
+      return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update item');
       console.error('Error updating item:', err);
-      throw err;
+      return false;
+    } finally {
+      setLoading(false);
     }
   }, []);
 
   const deleteItem = useCallback(async (id: string) => {
+    setLoading(true);
     try {
       await deleteDoc(doc(db, 'items', id));
-      setItems(prev => prev.filter(item => item.id !== id));
+      return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete item');
       console.error('Error deleting item:', err);
-      throw err;
+      return false;
+    } finally {
+      setLoading(false);
     }
   }, []);
 
-  return { items, loading, error, addItem, updateItem, deleteItem };
+  return {
+    loading,
+    error,
+    getItems,
+    addItem,
+    updateItem,
+    deleteItem,
+  };
 }

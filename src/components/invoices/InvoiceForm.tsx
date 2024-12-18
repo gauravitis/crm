@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Invoice, InvoiceItem } from '../../types/invoice';
 import { useInvoices } from '../../hooks/useInvoices';
-import { useItems } from '../../hooks/useItems';
 import { useClients } from '../../hooks/useClients';
 import { useVendors } from '../../hooks/useVendors';
 import { X, Plus, Trash2 } from 'lucide-react';
@@ -16,17 +15,15 @@ interface InvoiceFormProps {
 
 export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmit, onClose }) => {
   const { generateInvoiceNumber } = useInvoices();
-  const { getItems } = useItems();
   const { getClients } = useClients();
   const { getVendors } = useVendors();
   
-  const [items, setItems] = useState<any[]>([]);
   const [parties, setParties] = useState<any[]>([]);
   const [invoiceNumber, setInvoiceNumber] = useState('');
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<Omit<Invoice, 'id' | 'createdAt' | 'updatedAt'>>({
     type,
-    invoiceNumber: '',
+    invoiceNumber: 'Loading...',
     date: format(new Date(), 'yyyy-MM-dd'),
     dueDate: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
     status: 'DRAFT',
@@ -34,7 +31,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
     partyName: '',
     partyAddress: '',
     partyGST: '',
-    items: [] as InvoiceItem[],
+    items: [],
     subtotal: 0,
     taxAmount: 0,
     totalAmount: 0,
@@ -55,6 +52,19 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
         ...invoice,
         date: format(new Date(invoice.date), 'yyyy-MM-dd'),
         dueDate: format(new Date(invoice.dueDate), 'yyyy-MM-dd'),
+        subtotal: invoice.subtotal || 0,
+        taxAmount: invoice.taxAmount || 0,
+        totalAmount: invoice.totalAmount || 0,
+        paymentDue: invoice.paymentDue || 0,
+        paymentReceived: invoice.paymentReceived || 0,
+        items: invoice.items?.map(item => ({
+          ...item,
+          quantity: item.quantity || 0,
+          price: item.price || 0,
+          taxRate: item.taxRate || 0,
+          taxAmount: item.taxAmount || 0,
+          amount: item.amount || 0,
+        })) || [],
       });
     } else {
       generateNewInvoiceNumber();
@@ -62,15 +72,18 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
   }, [invoice]);
 
   const loadInitialData = async () => {
-    const fetchedItems = await getItems();
-    setItems(fetchedItems);
-
-    if (type === 'SALES') {
-      const clients = await getClients();
-      setParties(clients);
-    } else {
-      const vendors = await getVendors();
-      setParties(vendors);
+    try {
+      if (type === 'SALES') {
+        const clients = await getClients();
+        console.log('Loaded clients:', clients);
+        setParties(clients);
+      } else {
+        const vendors = await getVendors();
+        console.log('Loaded vendors:', vendors);
+        setParties(vendors);
+      }
+    } catch (error) {
+      console.error('Error loading initial data:', error);
     }
   };
 
@@ -82,14 +95,20 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
   };
 
   const handlePartyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const party = parties.find(p => p.id === e.target.value);
-    if (party) {
+    const partyId = e.target.value;
+    console.log('Selected party ID:', partyId);
+    console.log('Available parties:', parties);
+    
+    const selectedParty = parties.find(p => p.id === partyId);
+    console.log('Selected party:', selectedParty);
+    
+    if (selectedParty) {
       setFormData(prev => ({
         ...prev,
-        partyId: party.id,
-        partyName: party.name,
-        partyAddress: party.address,
-        partyGST: party.gstNumber || '',
+        partyId: selectedParty.id,
+        partyName: selectedParty.name,
+        partyAddress: selectedParty.address || '',
+        partyGST: selectedParty.gstNumber || '',
       }));
     }
   };
@@ -105,7 +124,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
           quantity: 1,
           price: 0,
           hsnCode: '',
-          taxRate: 18, // Default GST rate
+          taxRate: 18,
           taxAmount: 0,
           amount: 0,
         },
@@ -118,15 +137,20 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
       const newItems = [...prev.items];
       const item = { ...newItems[index], [field]: value };
 
+      // Ensure numeric values
+      if (field === 'quantity') item.quantity = parseInt(value) || 0;
+      if (field === 'price') item.price = parseFloat(value) || 0;
+      if (field === 'taxRate') item.taxRate = parseFloat(value) || 0;
+
       // Recalculate amounts
-      item.amount = item.quantity * item.price;
-      item.taxAmount = (item.amount * item.taxRate) / 100;
+      item.amount = (item.quantity || 0) * (item.price || 0);
+      item.taxAmount = (item.amount * (item.taxRate || 0)) / 100;
 
       newItems[index] = item;
 
       // Recalculate totals
-      const subtotal = newItems.reduce((sum, item) => sum + item.amount, 0);
-      const taxAmount = newItems.reduce((sum, item) => sum + item.taxAmount, 0);
+      const subtotal = newItems.reduce((sum, item) => sum + (item.amount || 0), 0);
+      const taxAmount = newItems.reduce((sum, item) => sum + (item.taxAmount || 0), 0);
       const totalAmount = subtotal + taxAmount;
 
       return {
@@ -143,8 +167,8 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
   const handleRemoveItem = (index: number) => {
     setFormData(prev => {
       const newItems = prev.items.filter((_, i) => i !== index);
-      const subtotal = newItems.reduce((sum, item) => sum + item.amount, 0);
-      const taxAmount = newItems.reduce((sum, item) => sum + item.taxAmount, 0);
+      const subtotal = newItems.reduce((sum, item) => sum + (item.amount || 0), 0);
+      const taxAmount = newItems.reduce((sum, item) => sum + (item.taxAmount || 0), 0);
       const totalAmount = subtotal + taxAmount;
 
       return {
@@ -182,8 +206,8 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
               <input
                 type="text"
                 value={formData.invoiceNumber}
-                disabled
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-50"
+                onChange={(e) => setFormData(prev => ({ ...prev, invoiceNumber: e.target.value }))}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
 
@@ -233,9 +257,9 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
               <label className="block text-sm font-medium text-gray-700">GST Number</label>
               <input
                 type="text"
-                value={formData.partyGST}
-                disabled
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-50"
+                value={formData.partyGST || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, partyGST: e.target.value }))}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
           </div>
@@ -247,26 +271,12 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
                 <div key={index} className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end border p-4 rounded-md">
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700">Item</label>
-                    <select
-                      value={item.itemId}
-                      onChange={(e) => {
-                        const selectedItem = items.find(i => i.id === e.target.value);
-                        if (selectedItem) {
-                          handleItemChange(index, 'itemId', selectedItem.id);
-                          handleItemChange(index, 'name', selectedItem.name);
-                          handleItemChange(index, 'price', selectedItem.price);
-                          handleItemChange(index, 'hsnCode', selectedItem.hsnCode);
-                        }
-                      }}
+                    <input
+                      type="text"
+                      value={item.name || ''}
+                      onChange={(e) => handleItemChange(index, 'name', e.target.value)}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    >
-                      <option value="">Select Item</option>
-                      {items.map(item => (
-                        <option key={item.id} value={item.id}>
-                          {item.name}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </div>
 
                   <div>
@@ -274,8 +284,8 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
                     <input
                       type="number"
                       min="1"
-                      value={item.quantity}
-                      onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value))}
+                      value={item.quantity || 0}
+                      onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     />
                   </div>
@@ -284,8 +294,10 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
                     <label className="block text-sm font-medium text-gray-700">Price</label>
                     <input
                       type="number"
-                      value={item.price}
-                      onChange={(e) => handleItemChange(index, 'price', parseFloat(e.target.value))}
+                      step="0.01"
+                      min="0"
+                      value={item.price || 0}
+                      onChange={(e) => handleItemChange(index, 'price', e.target.value)}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     />
                   </div>
@@ -294,8 +306,10 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
                     <label className="block text-sm font-medium text-gray-700">Tax Rate (%)</label>
                     <input
                       type="number"
-                      value={item.taxRate}
-                      onChange={(e) => handleItemChange(index, 'taxRate', parseFloat(e.target.value))}
+                      step="0.01"
+                      min="0"
+                      value={item.taxRate || 0}
+                      onChange={(e) => handleItemChange(index, 'taxRate', e.target.value)}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     />
                   </div>
@@ -327,7 +341,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700">Notes</label>
               <textarea
-                value={formData.notes}
+                value={formData.notes || ''}
                 onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                 rows={3}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
@@ -337,15 +351,15 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Subtotal:</span>
-                <span>₹{formData.subtotal.toLocaleString('en-IN')}</span>
+                <span>₹{(formData.subtotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>Tax Amount:</span>
-                <span>₹{formData.taxAmount.toLocaleString('en-IN')}</span>
+                <span>₹{(formData.taxAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between font-medium">
                 <span>Total Amount:</span>
-                <span>₹{formData.totalAmount.toLocaleString('en-IN')}</span>
+                <span>₹{(formData.totalAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
             </div>
           </div>

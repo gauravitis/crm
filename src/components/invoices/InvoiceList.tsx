@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import { Invoice } from '../../types/invoice';
 import { useInvoices } from '../../hooks/useInvoices';
 import { Eye, Pencil, Trash2 } from 'lucide-react';
@@ -11,18 +11,22 @@ interface InvoiceListProps {
   onDelete: (invoice: Invoice) => void;
 }
 
-export const InvoiceList: React.FC<InvoiceListProps> = ({ type, onView, onEdit, onDelete }) => {
+export const InvoiceList = forwardRef<{ loadInvoices: () => Promise<void> }, InvoiceListProps>(({ type, onView, onEdit, onDelete }, ref) => {
   const { getInvoices, loading, error } = useInvoices();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-
-  useEffect(() => {
-    loadInvoices();
-  }, [type]);
 
   const loadInvoices = async () => {
     const fetchedInvoices = await getInvoices(type);
     setInvoices(fetchedInvoices);
   };
+
+  useEffect(() => {
+    loadInvoices();
+  }, [type]);
+
+  useImperativeHandle(ref, () => ({
+    loadInvoices
+  }));
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -50,78 +54,89 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({ type, onView, onEdit, 
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Invoice Number
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Party Name
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Date
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Amount
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Status
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {invoices.map((invoice) => (
-            <tr key={invoice.id}>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                {invoice.invoiceNumber}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {invoice.partyName}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {format(invoice.date, 'dd/MM/yyyy')}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                ₹{invoice.totalAmount.toLocaleString('en-IN')}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(invoice.status)}`}>
-                  {invoice.status}
-                </span>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
-                <button
-                  onClick={() => onView(invoice)}
-                  className="text-blue-600 hover:text-blue-900"
-                >
-                  <Eye className="h-5 w-5" />
-                </button>
-                {invoice.status === 'DRAFT' && (
-                  <>
-                    <button
-                      onClick={() => onEdit(invoice)}
-                      className="text-indigo-600 hover:text-indigo-900"
-                    >
-                      <Pencil className="h-5 w-5" />
-                    </button>
-                    <button
-                      onClick={() => onDelete(invoice)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      <Trash2 className="h-5 w-5" />
-                    </button>
-                  </>
-                )}
-              </td>
+    <div className="bg-white shadow rounded-lg overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Invoice Number
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {type === 'SALES' ? 'Client' : 'Vendor'}
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Date
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Amount
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Status
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {invoices.map((invoice) => (
+              <tr 
+                key={invoice.id}
+                onClick={() => onView(invoice)}
+                className="cursor-pointer hover:bg-gray-50"
+              >
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  {invoice.invoiceNumber}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {type === 'SALES' ? invoice.client?.name : invoice.vendor?.name}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {format(new Date(invoice.date), 'dd/MM/yyyy')}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  ₹{(invoice.totalAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(invoice.status)}`}>
+                    {invoice.status}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onView(invoice);
+                    }}
+                    className="text-blue-600 hover:text-blue-900"
+                  >
+                    <Eye className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(invoice);
+                    }}
+                    className="text-green-600 hover:text-green-900"
+                  >
+                    <Pencil className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(invoice);
+                    }}
+                    className="text-red-600 hover:text-red-900"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
-};
+});

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Invoice } from '../types/invoice';
 import { InvoiceList } from '../components/invoices/InvoiceList';
 import { InvoiceForm } from '../components/invoices/InvoiceForm';
@@ -11,11 +11,13 @@ export const PurchaseInvoices = () => {
   const [showForm, setShowForm] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | undefined>();
+  const listRef = useRef<{ loadInvoices: () => Promise<void> }>();
 
   const handleAddInvoice = async (invoiceData: Omit<Invoice, 'id' | 'createdAt' | 'updatedAt'>) => {
     await addInvoice(invoiceData);
     setShowForm(false);
     setSelectedInvoice(undefined);
+    listRef.current?.loadInvoices();
   };
 
   const handleUpdateInvoice = async (invoiceData: Omit<Invoice, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -23,6 +25,7 @@ export const PurchaseInvoices = () => {
       await updateInvoice(selectedInvoice.id, invoiceData);
       setShowForm(false);
       setSelectedInvoice(undefined);
+      listRef.current?.loadInvoices();
     }
   };
 
@@ -39,6 +42,7 @@ export const PurchaseInvoices = () => {
   const handleDelete = async (invoice: Invoice) => {
     if (window.confirm('Are you sure you want to delete this invoice?')) {
       await deleteInvoice(invoice.id);
+      listRef.current?.loadInvoices();
     }
   };
 
@@ -51,7 +55,7 @@ export const PurchaseInvoices = () => {
             setSelectedInvoice(undefined);
             setShowForm(true);
           }}
-          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
           <Plus className="h-5 w-5 mr-2" />
           New Purchase Invoice
@@ -59,6 +63,7 @@ export const PurchaseInvoices = () => {
       </div>
 
       <InvoiceList
+        ref={listRef}
         type="PURCHASE"
         onView={handleView}
         onEdit={handleEdit}
@@ -83,10 +88,6 @@ export const PurchaseInvoices = () => {
           onClose={() => {
             setShowDetails(false);
             setSelectedInvoice(undefined);
-          }}
-          onDownload={() => {
-            // Implement PDF download
-            console.log('Download invoice:', selectedInvoice.id);
           }}
         />
       )}
