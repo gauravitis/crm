@@ -46,6 +46,12 @@ export const SalesInvoices = () => {
     }
   };
 
+  const getClientName = (clientId: string) => {
+    // Assuming you have a list of clients, you can find the client by id and return its name
+    // For demonstration purposes, I'll just return a static string
+    return 'Client Name';
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
@@ -97,6 +103,7 @@ export const SalesInvoices = () => {
             // Implement email sending
             console.log('Send invoice:', selectedInvoice.id);
           }}
+          clientName={getClientName(selectedInvoice.clientId)}
         />
       )}
     </div>

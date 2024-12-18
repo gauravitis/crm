@@ -12,6 +12,7 @@
   "dependencies": {
     "@headlessui/react": "^1.7.18",
     "@hello-pangea/dnd": "^16.5.0",
+    "@react-pdf/renderer": "^4.1.5",
     "@sentry/react": "^7.101.1",
     "@tanstack/react-query": "^5.24.1",
     "@vercel/analytics": "^1.2.2",
