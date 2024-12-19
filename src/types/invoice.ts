@@ -3,6 +3,7 @@ export type InvoiceStatus = 'DRAFT' | 'SENT' | 'PAID' | 'OVERDUE' | 'CANCELLED';
 export type PaymentStatus = 'UNPAID' | 'PARTIALLY_PAID' | 'PAID';
 
 export interface InvoiceItem {
+  id?: string;
   itemId: string;
   name: string;
   quantity: number;
@@ -11,6 +12,7 @@ export interface InvoiceItem {
   taxRate: number;
   taxAmount: number;
   amount: number;
+  deliveryCharges: number;
 }
 
 export interface Invoice {
@@ -33,6 +35,7 @@ export interface Invoice {
   // Amounts
   subtotal: number;
   taxAmount: number;
+  deliveryCharges: number;
   totalAmount: number;
   
   // Payment details

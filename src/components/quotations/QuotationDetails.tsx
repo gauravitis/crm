@@ -29,10 +29,15 @@ export default function QuotationDetails({ quotation, onClose }: QuotationDetail
           <div className="flex space-x-2">
             <button
               onClick={() => {
-                if (client) {
-                  generatePDF(quotation, client);
-                } else {
-                  alert('Client information not found');
+                try {
+                  if (client) {
+                    generatePDF(quotation, client);
+                  } else {
+                    alert('Client information not found');
+                  }
+                } catch (error) {
+                  console.error('Error generating PDF:', error);
+                  alert('Error generating PDF. Please try again.');
                 }
               }}
               className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
@@ -42,10 +47,15 @@ export default function QuotationDetails({ quotation, onClose }: QuotationDetail
             </button>
             <button
               onClick={() => {
-                if (client) {
-                  generateDOCX(quotation, client);
-                } else {
-                  alert('Client information not found');
+                try {
+                  if (client) {
+                    generateDOCX(quotation, client);
+                  } else {
+                    alert('Client information not found');
+                  }
+                } catch (error) {
+                  console.error('Error generating Word document:', error);
+                  alert('Error generating Word document. Please try again.');
                 }
               }}
               className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"

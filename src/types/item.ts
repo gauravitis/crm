@@ -8,4 +8,8 @@ export interface Item {
   quantity: number;
   createdAt: Date;
   hsnCode: string;
+  batchNo: string;
+  mfgDate: Date | null;
+  expDate: Date | null;
+  brand: string;
 }

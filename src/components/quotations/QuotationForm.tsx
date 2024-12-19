@@ -81,9 +81,20 @@ export default function QuotationForm({ onSubmit, initialData }: QuotationFormPr
   };
 
   const handleSuggestionClick = (index: number, item: Item) => {
-    handleItemChange(index, 'description', item.name);
-    handleItemChange(index, 'price', item.price);
+    const newItems = [...quotationItems];
+    newItems[index] = {
+      ...newItems[index],
+      description: item.name,
+      price: item.price,
+      total: calculateItemTotal({
+        ...newItems[index],
+        description: item.name,
+        price: item.price
+      })
+    };
+    setQuotationItems(newItems);
     setSuggestions([]);
+    setFocusedItemIndex(null);
   };
 
   return (

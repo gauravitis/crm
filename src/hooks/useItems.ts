@@ -1,5 +1,17 @@
 import { useState, useCallback, useEffect } from 'react';
-import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, Timestamp, query, orderBy } from 'firebase/firestore';
+import { 
+  collection, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  getDocs, 
+  Timestamp, 
+  query, 
+  orderBy,
+  runTransaction,
+  getDoc
+} from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Item } from '../types/item';
 
@@ -34,7 +46,7 @@ export function useItems() {
   // Load items on mount
   useEffect(() => {
     getItems();
-  }, []);
+  }, [getItems]);
 
   const addItem = useCallback(async (itemData: Omit<Item, 'id' | 'createdAt'>) => {
     setLoading(true);
@@ -109,6 +121,50 @@ export function useItems() {
     }
   }, []);
 
+  // New function to update item quantities in batch
+  const updateItemQuantities = useCallback(async (
+    items: Array<{ id: string; quantity: number }>, 
+    type: 'PURCHASE' | 'SALES'
+  ) => {
+    try {
+      await runTransaction(db, async (transaction) => {
+        for (const item of items) {
+          const itemRef = doc(db, 'items', item.id);
+          const itemDoc = await transaction.get(itemRef);
+          
+          if (!itemDoc.exists()) {
+            throw new Error(`Item with ID ${item.id} not found`);
+          }
+
+          const currentQuantity = itemDoc.data().quantity || 0;
+          let newQuantity: number;
+
+          if (type === 'PURCHASE') {
+            // Add to inventory for purchases
+            newQuantity = currentQuantity + item.quantity;
+          } else {
+            // Subtract from inventory for sales
+            newQuantity = currentQuantity - item.quantity;
+            if (newQuantity < 0) {
+              throw new Error(`Insufficient quantity for item ${itemDoc.data().name}`);
+            }
+          }
+
+          transaction.update(itemRef, { quantity: newQuantity });
+        }
+      });
+
+      // Refresh items list after successful transaction
+      await getItems();
+      return true;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update item quantities';
+      setError(errorMessage);
+      console.error('Error updating item quantities:', err);
+      return false;
+    }
+  }, [getItems]);
+
   return {
     items,
     loading,
@@ -117,5 +173,6 @@ export function useItems() {
     addItem,
     updateItem,
     deleteItem,
+    updateItemQuantities
   };
 }

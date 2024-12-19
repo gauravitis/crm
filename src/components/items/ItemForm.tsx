@@ -16,6 +16,10 @@ export default function ItemForm({ onSubmit, onCancel, initialData }: ItemFormPr
     price: initialData?.price || '',
     quantity: initialData?.quantity || 0,
     hsnCode: initialData?.hsnCode || '',
+    batchNo: initialData?.batchNo || '',
+    mfgDate: initialData?.mfgDate ? new Date(initialData.mfgDate).toISOString().split('T')[0] : '',
+    expDate: initialData?.expDate ? new Date(initialData.expDate).toISOString().split('T')[0] : '',
+    brand: initialData?.brand || '',
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -24,6 +28,8 @@ export default function ItemForm({ onSubmit, onCancel, initialData }: ItemFormPr
       ...formData,
       price: Number(formData.price),
       quantity: Number(formData.quantity),
+      mfgDate: formData.mfgDate ? new Date(formData.mfgDate) : null,
+      expDate: formData.expDate ? new Date(formData.expDate) : null,
     });
   };
 
@@ -104,6 +110,64 @@ export default function ItemForm({ onSubmit, onCancel, initialData }: ItemFormPr
           id="hsnCode"
           required
           value={formData.hsnCode}
+          onChange={handleChange}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="batchNo" className="block text-sm font-medium text-gray-700">
+          Batch Number
+        </label>
+        <input
+          type="text"
+          name="batchNo"
+          id="batchNo"
+          required
+          value={formData.batchNo}
+          onChange={handleChange}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="mfgDate" className="block text-sm font-medium text-gray-700">
+          Manufacturing Date
+        </label>
+        <input
+          type="date"
+          name="mfgDate"
+          id="mfgDate"
+          value={formData.mfgDate}
+          onChange={handleChange}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="expDate" className="block text-sm font-medium text-gray-700">
+          Expiry Date
+        </label>
+        <input
+          type="date"
+          name="expDate"
+          id="expDate"
+          value={formData.expDate}
+          onChange={handleChange}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="brand" className="block text-sm font-medium text-gray-700">
+          Brand
+        </label>
+        <input
+          type="text"
+          name="brand"
+          id="brand"
+          required
+          value={formData.brand}
           onChange={handleChange}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
         />

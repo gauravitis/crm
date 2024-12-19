@@ -3,8 +3,10 @@ import { Invoice, InvoiceItem } from '../../types/invoice';
 import { useInvoices } from '../../hooks/useInvoices';
 import { useClients } from '../../hooks/useClients';
 import { useVendors } from '../../hooks/useVendors';
+import { useItems } from '../../hooks/useItems';
 import { X, Plus, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { CreateItemModal } from '../items/CreateItemModal';
 
 interface InvoiceFormProps {
   type: 'SALES' | 'PURCHASE';
@@ -17,9 +19,11 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
   const { generateInvoiceNumber } = useInvoices();
   const { getClients } = useClients();
   const { getVendors } = useVendors();
+  const { items: availableItems } = useItems();
   
   const [parties, setParties] = useState<any[]>([]);
   const [invoiceNumber, setInvoiceNumber] = useState('');
+  const [showCreateItemModal, setShowCreateItemModal] = useState(false);
   
   const [formData, setFormData] = useState<Omit<Invoice, 'id' | 'createdAt' | 'updatedAt'>>({
     type,
@@ -34,6 +38,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
     items: [],
     subtotal: 0,
     taxAmount: 0,
+    deliveryCharges: 0,
     totalAmount: 0,
     paymentTerms: 'Net 30',
     paymentStatus: 'UNPAID',
@@ -54,6 +59,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
         dueDate: format(new Date(invoice.dueDate), 'yyyy-MM-dd'),
         subtotal: invoice.subtotal || 0,
         taxAmount: invoice.taxAmount || 0,
+        deliveryCharges: invoice.deliveryCharges || 0,
         totalAmount: invoice.totalAmount || 0,
         paymentDue: invoice.paymentDue || 0,
         paymentReceived: invoice.paymentReceived || 0,
@@ -64,6 +70,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
           taxRate: item.taxRate || 0,
           taxAmount: item.taxAmount || 0,
           amount: item.amount || 0,
+          deliveryCharges: item.deliveryCharges || 0,
         })) || [],
       });
     } else {
@@ -75,11 +82,9 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
     try {
       if (type === 'SALES') {
         const clients = await getClients();
-        console.log('Loaded clients:', clients);
         setParties(clients);
       } else {
         const vendors = await getVendors();
-        console.log('Loaded vendors:', vendors);
         setParties(vendors);
       }
     } catch (error) {
@@ -96,11 +101,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
 
   const handlePartyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const partyId = e.target.value;
-    console.log('Selected party ID:', partyId);
-    console.log('Available parties:', parties);
-    
     const selectedParty = parties.find(p => p.id === partyId);
-    console.log('Selected party:', selectedParty);
     
     if (selectedParty) {
       setFormData(prev => ({
@@ -119,6 +120,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
       items: [
         ...prev.items,
         {
+          id: '', // This will be set when an item is selected
           itemId: '',
           name: '',
           quantity: 1,
@@ -127,6 +129,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
           taxRate: 18,
           taxAmount: 0,
           amount: 0,
+          deliveryCharges: 0,
         },
       ],
     }));
@@ -135,12 +138,27 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
   const handleItemChange = (index: number, field: keyof InvoiceItem, value: any) => {
     setFormData(prev => {
       const newItems = [...prev.items];
-      const item = { ...newItems[index], [field]: value };
+      const item = { ...newItems[index] };
+
+      if (field === 'itemId') {
+        // When an item is selected from the dropdown
+        const selectedItem = availableItems.find(i => i.id === value);
+        if (selectedItem) {
+          item.id = selectedItem.id;
+          item.itemId = selectedItem.id;
+          item.name = selectedItem.name;
+          item.price = selectedItem.price;
+          item.hsnCode = selectedItem.hsnCode;
+        }
+      } else {
+        item[field] = value;
+      }
 
       // Ensure numeric values
       if (field === 'quantity') item.quantity = parseInt(value) || 0;
       if (field === 'price') item.price = parseFloat(value) || 0;
       if (field === 'taxRate') item.taxRate = parseFloat(value) || 0;
+      if (field === 'deliveryCharges') item.deliveryCharges = parseFloat(value) || 0;
 
       // Recalculate amounts
       item.amount = (item.quantity || 0) * (item.price || 0);
@@ -151,13 +169,28 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
       // Recalculate totals
       const subtotal = newItems.reduce((sum, item) => sum + (item.amount || 0), 0);
       const taxAmount = newItems.reduce((sum, item) => sum + (item.taxAmount || 0), 0);
-      const totalAmount = subtotal + taxAmount;
+      const deliveryCharges = newItems.reduce((sum, item) => sum + (item.deliveryCharges || 0), 0);
+      const totalAmount = subtotal + taxAmount + deliveryCharges + prev.deliveryCharges;
 
       return {
         ...prev,
         items: newItems,
         subtotal,
         taxAmount,
+        deliveryCharges,
+        totalAmount,
+        paymentDue: totalAmount,
+      };
+    });
+  };
+
+  const handleDeliveryChargesChange = (value: string) => {
+    const deliveryCharges = parseFloat(value) || 0;
+    setFormData(prev => {
+      const totalAmount = prev.subtotal + prev.taxAmount + deliveryCharges;
+      return {
+        ...prev,
+        deliveryCharges,
         totalAmount,
         paymentDue: totalAmount,
       };
@@ -169,13 +202,15 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
       const newItems = prev.items.filter((_, i) => i !== index);
       const subtotal = newItems.reduce((sum, item) => sum + (item.amount || 0), 0);
       const taxAmount = newItems.reduce((sum, item) => sum + (item.taxAmount || 0), 0);
-      const totalAmount = subtotal + taxAmount;
+      const deliveryCharges = newItems.reduce((sum, item) => sum + (item.deliveryCharges || 0), 0);
+      const totalAmount = subtotal + taxAmount + deliveryCharges + prev.deliveryCharges;
 
       return {
         ...prev,
         items: newItems,
         subtotal,
         taxAmount,
+        deliveryCharges,
         totalAmount,
         paymentDue: totalAmount,
       };
@@ -184,7 +219,48 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate required fields
+    if (!formData.partyId) {
+      alert('Please select a ' + (type === 'SALES' ? 'client' : 'vendor'));
+      return;
+    }
+
+    if (formData.items.length === 0) {
+      alert('Please add at least one item');
+      return;
+    }
+
+    // Validate items have required fields
+    const invalidItems = formData.items.filter(item => !item.itemId || !item.quantity || !item.price);
+    if (invalidItems.length > 0) {
+      alert('Please fill in all item details');
+      return;
+    }
+
     onSubmit(formData);
+  };
+
+  const handleNewItemCreated = (newItem: any) => {
+    // Add the new item to the current invoice
+    setFormData(prev => ({
+      ...prev,
+      items: [
+        ...prev.items,
+        {
+          id: newItem.id,
+          itemId: newItem.id,
+          name: newItem.name,
+          quantity: 1,
+          price: newItem.price,
+          hsnCode: newItem.hsnCode || '',
+          taxRate: 18,
+          taxAmount: (newItem.price * 18) / 100,
+          amount: newItem.price,
+          deliveryCharges: 0,
+        },
+      ],
+    }));
   };
 
   return (
@@ -206,8 +282,8 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
               <input
                 type="text"
                 value={formData.invoiceNumber}
-                onChange={(e) => setFormData(prev => ({ ...prev, invoiceNumber: e.target.value }))}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                readOnly
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-50"
               />
             </div>
 
@@ -258,8 +334,8 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
               <input
                 type="text"
                 value={formData.partyGST || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, partyGST: e.target.value }))}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                readOnly
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-50"
               />
             </div>
           </div>
@@ -268,15 +344,21 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
             <label className="block text-sm font-medium text-gray-700">Items</label>
             <div className="mt-2 space-y-4">
               {formData.items.map((item, index) => (
-                <div key={index} className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end border p-4 rounded-md">
+                <div key={index} className="grid grid-cols-1 md:grid-cols-7 gap-4 items-end border p-4 rounded-md">
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700">Item</label>
-                    <input
-                      type="text"
-                      value={item.name || ''}
-                      onChange={(e) => handleItemChange(index, 'name', e.target.value)}
+                    <select
+                      value={item.itemId || ''}
+                      onChange={(e) => handleItemChange(index, 'itemId', e.target.value)}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
+                    >
+                      <option value="">Select Item</option>
+                      {availableItems.map(availableItem => (
+                        <option key={availableItem.id} value={availableItem.id}>
+                          {availableItem.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <div>
@@ -314,6 +396,18 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
                     />
                   </div>
 
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Delivery Charges</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={item.deliveryCharges || 0}
+                      onChange={(e) => handleItemChange(index, 'deliveryCharges', e.target.value)}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </div>
+
                   <div className="flex items-end">
                     <button
                       type="button"
@@ -326,14 +420,25 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
                 </div>
               ))}
 
-              <button
-                type="button"
-                onClick={handleAddItem}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-              >
-                <Plus className="h-5 w-5 mr-2" />
-                Add Item
-              </button>
+              <div className="flex space-x-4">
+                <button
+                  type="button"
+                  onClick={handleAddItem}
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  <Plus className="h-5 w-5 mr-2" />
+                  Add Item
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowCreateItemModal(true)}
+                  className="inline-flex items-center px-4 py-2 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-blue-50"
+                >
+                  <Plus className="h-5 w-5 mr-2" />
+                  Create New Item
+                </button>
+              </div>
             </div>
           </div>
 
@@ -357,14 +462,28 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
                 <span>Tax Amount:</span>
                 <span>₹{(formData.taxAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
-              <div className="flex justify-between font-medium">
+              <div className="flex justify-between text-sm">
+                <span>Delivery Charges:</span>
+                <div className="flex items-center">
+                  <span className="mr-2">₹</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formData.deliveryCharges || 0}
+                    onChange={(e) => handleDeliveryChargesChange(e.target.value)}
+                    className="w-24 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-between font-medium pt-2 border-t">
                 <span>Total Amount:</span>
                 <span>₹{(formData.totalAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
             </div>
           </div>
 
-          <div className="flex justify-end space-x-3 pt-4">
+          <div className="flex justify-end space-x-3 pt-4 border-t">
             <button
               type="button"
               onClick={onClose}
@@ -381,6 +500,16 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ type, invoice, onSubmi
           </div>
         </form>
       </div>
+
+      {showCreateItemModal && (
+        <CreateItemModal
+          onClose={() => setShowCreateItemModal(false)}
+          onItemCreated={(item) => {
+            handleNewItemCreated(item);
+            setShowCreateItemModal(false);
+          }}
+        />
+      )}
     </div>
   );
 };

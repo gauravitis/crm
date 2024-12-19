@@ -4,10 +4,12 @@ import { InvoiceList } from '../components/invoices/InvoiceList';
 import { InvoiceForm } from '../components/invoices/InvoiceForm';
 import { InvoiceDetails } from '../components/invoices/InvoiceDetails';
 import { useInvoices } from '../hooks/useInvoices';
+import { useClients } from '../hooks/useClients';
 import { Plus } from 'lucide-react';
 
 export const SalesInvoices = () => {
   const { addInvoice, updateInvoice, deleteInvoice } = useInvoices();
+  const { clients } = useClients();
   const [showForm, setShowForm] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | undefined>();
@@ -46,10 +48,15 @@ export const SalesInvoices = () => {
     }
   };
 
-  const getClientName = (clientId: string) => {
-    // Assuming you have a list of clients, you can find the client by id and return its name
-    // For demonstration purposes, I'll just return a static string
-    return 'Client Name';
+  const getClientName = (invoice: Invoice) => {
+    // First try to use the partyName from the invoice
+    if (invoice.partyName) {
+      return invoice.partyName;
+    }
+    
+    // If partyName is not available, try to find the client by partyId
+    const client = clients.find(c => c.id === invoice.partyId);
+    return client ? client.name : 'Unknown Client';
   };
 
   return (
@@ -95,15 +102,7 @@ export const SalesInvoices = () => {
             setShowDetails(false);
             setSelectedInvoice(undefined);
           }}
-          onDownload={() => {
-            // Implement PDF download
-            console.log('Download invoice:', selectedInvoice.id);
-          }}
-          onSend={() => {
-            // Implement email sending
-            console.log('Send invoice:', selectedInvoice.id);
-          }}
-          clientName={getClientName(selectedInvoice.clientId)}
+          clientName={getClientName(selectedInvoice)}
         />
       )}
     </div>

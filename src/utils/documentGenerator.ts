@@ -1,437 +1,420 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { Document, Packer, Paragraph, Table, TableRow, TableCell, TextRun, AlignmentType, BorderStyle, HeadingLevel, WidthType } from 'docx';
+import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, AlignmentType, WidthType, BorderStyle } from 'docx';
 import { Quotation, Client, QuotationItem } from '../types';
 import { format } from 'date-fns';
-import ChembioLogo from '../assets/chembio-logo.png';
-
-const COMPANY_NAME = 'Chembio Lifesciences';
-const COMPANY_ADDRESS = 'L-10, Himalaya Legend, Nyay Khand-1';
-const COMPANY_CITY = 'Indirapuram, Ghaziabad-201014';
-const COMPANY_PHONE = 'Ph: 9911998473, 0120-4909400';
-const COMPANY_EMAIL = 'info@chembiolifesciences.com';
-const COMPANY_GST = 'GST: XXXXXXXXXXXXX';
-const BANK_DETAILS = {
-  BANK: 'HDFC BANK',
-  ACCOUNT_NUMBER: 'XXXXXXXXX',
-  IFSC: 'XCVX2343CC'
-};
 
 const formatCurrency = (amount: number) => {
-  return amount.toFixed(2);  // This will display numbers as "3823.00"
+  return amount.toFixed(2);
+};
+
+const calculateGST = (item: QuotationItem) => {
+  const baseAmount = item.quantity * item.price;
+  return (baseAmount * item.gst) / 100;
 };
 
 const calculateItemTotal = (item: QuotationItem) => {
-  const baseAmount = item.price * item.quantity;
-  const discountAmount = baseAmount * (item.discount / 100);
-  const afterDiscount = baseAmount - discountAmount;
-  const gstAmount = afterDiscount * (item.gst / 100);
+  const subtotal = item.quantity * item.price;
+  const discountAmount = (subtotal * item.discount) / 100;
+  const afterDiscount = subtotal - discountAmount;
+  const gstAmount = (afterDiscount * item.gst) / 100;
   return afterDiscount + gstAmount;
 };
 
 const calculateTotals = (items: QuotationItem[]) => {
-  const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const subtotal = items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
   const totalGST = items.reduce((sum, item) => {
-    const baseAmount = item.price * item.quantity;
-    const discountAmount = baseAmount * (item.discount / 100);
-    const afterDiscount = baseAmount - discountAmount;
-    return sum + (afterDiscount * (item.gst / 100));
+    const itemSubtotal = item.quantity * item.price;
+    const afterDiscount = itemSubtotal * (1 - item.discount / 100);
+    return sum + (afterDiscount * item.gst / 100);
   }, 0);
-  const grandTotal = subtotal + totalGST;
+  const grandTotal = items.reduce((sum, item) => sum + calculateItemTotal(item), 0);
   return { subtotal, totalGST, grandTotal };
 };
 
 export const generatePDF = async (quotation: Quotation, client: Client) => {
   const doc = new jsPDF();
   
-  try {
-    const response = await fetch(ChembioLogo);
-    const blob = await response.blob();
-    const reader = new FileReader();
-    
-    reader.onloadend = () => {
-      const base64data = reader.result as string;
-      
-      // Logo on left
-      const imgWidth = 40;
-      const imgHeight = 20;
-      doc.addImage(base64data, 'PNG', 20, 10, imgWidth, imgHeight);
-      
-      // Company details on right
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.text(COMPANY_NAME, doc.internal.pageSize.width - 20, 20, { align: 'right' });
-      
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'normal');
-      doc.text(COMPANY_ADDRESS, doc.internal.pageSize.width - 20, 25, { align: 'right' });
-      doc.text(COMPANY_CITY, doc.internal.pageSize.width - 20, 30, { align: 'right' });
-      doc.text(COMPANY_PHONE, doc.internal.pageSize.width - 20, 35, { align: 'right' });
-      doc.text(COMPANY_EMAIL, doc.internal.pageSize.width - 20, 40, { align: 'right' });
-      doc.text(COMPANY_GST, doc.internal.pageSize.width - 20, 45, { align: 'right' });
+  // Add company logo text
+  doc.setFontSize(40);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(0, 87, 183); // Blue color for CHEMBIO
+  doc.text('CHEMBIO', 20, 30);
 
-      // Quotation details table on right
-      (doc as any).autoTable({
-        startY: 55,
-        tableWidth: 80,
-        margin: { left: doc.internal.pageSize.width - 100 },
-        body: [
-          ['Quote/Performa Invoice', `QT-${quotation.id.slice(0, 8).toUpperCase()}`],
-          ['Quotation Date', format(new Date(quotation.createdAt), 'dd/MM/yyyy')],
-          ['Valid From', format(new Date(quotation.createdAt), 'dd/MM/yyyy')],
-          ['Valid To', format(new Date(quotation.validUntil), 'dd/MM/yyyy')],
-        ],
-        theme: 'plain',
-        styles: { fontSize: 8, cellPadding: 1 },
-        columnStyles: {
-          0: { fontStyle: 'bold' },
-          1: { halign: 'right' }
-        }
-      });
+  // Add company details
+  doc.setTextColor(0, 0, 0); // Reset to black
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.text('CHEMBIO LIFESCIENCES', doc.internal.pageSize.getWidth() - 10, 20, { align: 'right' });
+  
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text('L-10,1st Floor, Himalaya Legend, Near Indirapuram Public School', doc.internal.pageSize.getWidth() - 10, 25, { align: 'right' });
+  doc.text('Nyay Khand-1, Indirapuram, Ghaziabad-201014.', doc.internal.pageSize.getWidth() - 10, 30, { align: 'right' });
+  doc.text('Email: chembio.sales@gmail.com', doc.internal.pageSize.getWidth() - 10, 35, { align: 'right' });
+  doc.text('Tel: 0120 4909400', doc.internal.pageSize.getWidth() - 10, 40, { align: 'right' });
+  doc.text('PAN No. AALFC0922C; GST No. 09AALFC0922C1ZU', doc.internal.pageSize.getWidth() - 10, 45, { align: 'right' });
 
-      // Client details on left
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.text('To:', 20, 60);
-      doc.setFont('helvetica', 'normal');
-      doc.text([
-        client.name,
-        client.company,
-        `Email: ${client.email}`,
-        `Phone: ${client.phone}`
-      ], 20, 65);
+  // Add Quotation title
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Quotation', doc.internal.pageSize.getWidth() / 2, 60, { align: 'center' });
 
-      // Items table
-      const tableData = quotation.items.map((item, index) => [
-        (index + 1).toString(),
-        item.description,
-        item.quantity.toString(),
-        formatCurrency(item.price),
-        `${item.gst}%`,
-        `${item.discount}%`,
-        formatCurrency(calculateItemTotal(item))
-      ]);
+  // Add client and quotation details in a table-like structure
+  doc.setFontSize(10);
+  doc.text('To,', 10, 70);
+  
+  // Left side (Client details)
+  const clientName = client.name || '';
+  const clientCompany = client.company || '';
+  const clientAddress = typeof client.address === 'string' ? client.address : 
+                       (client.address ? JSON.stringify(client.address) : '');
+  
+  let yPos = 75;
+  [clientCompany, clientAddress].forEach(line => {
+    if (line) {
+      doc.text(line, 10, yPos);
+      yPos += 5;
+    }
+  });
 
-      (doc as any).autoTable({
-        startY: 90,
-        head: [['Sl.No.', 'Material No / Description / HSNCode', 'QTY/UOM', 'Unit Price', 'GST Rate', 'Discount', 'Total Price']],
-        body: tableData,
-        theme: 'grid',
-        headStyles: { 
-          fillColor: [0, 51, 102],
-          textColor: 255,
-          fontStyle: 'bold',
-          halign: 'center'
-        },
-        styles: {
-          fontSize: 8,
-          cellPadding: 3,
-          valign: 'middle',
-          overflow: 'linebreak'
-        },
-        columnStyles: {
-          0: { cellWidth: 10, halign: 'center' },
-          1: { cellWidth: 50 },
-          2: { cellWidth: 15, halign: 'center' },
-          3: { cellWidth: 30, halign: 'right', cellPadding: { right: 5 } },
-          4: { cellWidth: 15, halign: 'center' },
-          5: { cellWidth: 15, halign: 'center' },
-          6: { cellWidth: 35, halign: 'right', cellPadding: { right: 5 } }
-        },
-        margin: { left: 10, right: 10 }
-      });
-
-      // Calculate totals
-      const { subtotal, totalGST, grandTotal } = calculateTotals(quotation.items);
-
-      // Summary table
-      const summaryY = (doc as any).lastAutoTable.finalY + 10;
-      (doc as any).autoTable({
-        startY: summaryY,
-        body: [
-          ['SUBTOTAL', '', '', '', '', '', formatCurrency(subtotal)],
-          ['IGST', '', '', '', '', '', formatCurrency(totalGST)],
-          ['GRAND TOTAL', '', '', '', '', '', formatCurrency(grandTotal)]
-        ],
-        theme: 'plain',
-        styles: {
-          fontSize: 9,
-          cellPadding: 1
-        },
-        columnStyles: {
-          0: { fontStyle: 'bold' },
-          6: { halign: 'right' }
-        },
-        margin: { left: doc.internal.pageSize.width - 100 }
-      });
-
-      // Notes
-      doc.setFontSize(8);
-      doc.text([
-        'Notes:',
-        '• Prices quoted are for the stated quantities and the right is reserved to increase the price for lesser requirements.',
-        '• Product supply is subject to availability'
-      ], 20, summaryY + 30);
-
-      // Bank Details
-      const bankY = summaryY + 50;
-      doc.setFont('helvetica', 'bold');
-      doc.text('Bank Details:', 20, bankY);
-      doc.setFont('helvetica', 'normal');
-      doc.text([
-        `Bank: ${BANK_DETAILS.BANK}`,
-        `Account Number: ${BANK_DETAILS.ACCOUNT_NUMBER}`,
-        `IFSC Code: ${BANK_DETAILS.IFSC}`
-      ], 20, bankY + 5);
-
-      // Footer
-      const footerY = doc.internal.pageSize.height - 10;
-      doc.setFontSize(8);
-      doc.text('This is a computer-generated document. No signature is required.', doc.internal.pageSize.width / 2, footerY, { align: 'center' });
-
-      // Save the PDF
-      doc.save(`Quotation-${quotation.id}.pdf`);
-    };
-    
-    reader.readAsDataURL(blob);
-  } catch (error) {
-    console.error('Error generating PDF:', error);
+  if (client.phone) {
+    doc.text(`Tel.No.: ${client.phone}`, 10, yPos);
+    yPos += 5;
   }
+
+  if (clientName) {
+    doc.text(`Kind Attn: ${clientName}`, 10, yPos);
+    yPos += 5;
+  }
+
+  // Right side (Quotation details)
+  const quoteNo = `CBLS/${format(new Date(), 'yy')}-${format(new Date(), 'yy')+1}/${quotation.id.slice(0, 4)}`;
+  const quoteDate = format(new Date(quotation.createdAt), 'dd-MMM-yyyy');
+  
+  doc.text('Your Ref:', doc.internal.pageSize.getWidth() - 60, 70);
+  doc.text('Ref No:', doc.internal.pageSize.getWidth() - 60, 75);
+  doc.text('Date:', doc.internal.pageSize.getWidth() - 60, 80);
+  
+  doc.text(quoteNo, doc.internal.pageSize.getWidth() - 10, 75, { align: 'right' });
+  doc.text(quoteDate, doc.internal.pageSize.getWidth() - 10, 80, { align: 'right' });
+
+  // Add introduction text
+  doc.setFont('helvetica', 'normal');
+  doc.text('Dear Sir/Madam,', 10, yPos + 10);
+  doc.text('We wish to thank you for your interest in our Products. We hereby quote as below:', 10, yPos + 15);
+
+  // Add items table
+  const tableColumns = [
+    'S. No.',
+    'Cat no.',
+    'Pack Size',
+    'Product Description',
+    'Qty.',
+    'Unit rate',
+    'Discounted Value',
+    'Expended value',
+    'Gst %',
+    'GST value',
+    'Total Price INR',
+    'Lead time',
+    'Make'
+  ];
+
+  const tableData = quotation.items.map((item, index) => {
+    const baseAmount = item.quantity * item.price;
+    const gstAmount = calculateGST(item);
+    return [
+      (index + 1).toString(),
+      item.catalogNo || '',
+      item.packSize || '',
+      item.description,
+      item.quantity.toString(),
+      formatCurrency(item.price),
+      formatCurrency(baseAmount),
+      formatCurrency(baseAmount),
+      `${item.gst}%`,
+      formatCurrency(gstAmount),
+      formatCurrency(baseAmount + gstAmount),
+      '1-2 weeks',
+      item.make || ''
+    ];
+  });
+
+  (doc as any).autoTable({
+    startY: yPos + 25,
+    head: [tableColumns],
+    body: tableData,
+    theme: 'grid',
+    styles: {
+      fontSize: 8,
+      cellPadding: 2
+    },
+    columnStyles: {
+      0: { cellWidth: 10 }, // S. No.
+      1: { cellWidth: 20 }, // Cat no.
+      2: { cellWidth: 15 }, // Pack Size
+      3: { cellWidth: 40 }, // Product Description
+      4: { cellWidth: 10 }, // Qty.
+      5: { cellWidth: 15 }, // Unit rate
+      6: { cellWidth: 20 }, // Discounted Value
+      7: { cellWidth: 20 }, // Expended value
+      8: { cellWidth: 10 }, // Gst %
+      9: { cellWidth: 15 }, // GST value
+      10: { cellWidth: 20 }, // Total Price INR
+      11: { cellWidth: 15 }, // Lead time
+      12: { cellWidth: 15 }  // Make
+    }
+  });
+
+  const finalY = (doc as any).lastAutoTable.finalY;
+
+  // Add bank details
+  doc.setFont('helvetica', 'bold');
+  doc.text('HDFC BANK LTD.', 10, finalY + 20);
+  doc.setFont('helvetica', 'normal');
+  doc.text([
+    'Account No: 50200017511430 ; NEFT/RTGS IFCS : HDFC0000590',
+    'Branch code:0590 ; Micro code : 110240081 ;Account type: Current account'
+  ], 10, finalY + 25);
+
+  // Add terms and conditions
+  doc.setFont('helvetica', 'bold');
+  doc.text('Terms & Conditions:', 10, finalY + 40);
+  doc.setFont('helvetica', 'normal');
+  doc.text([
+    '1) Payment: Payment within 15 days.',
+    '2) Validity: 30Days',
+    '3) Please check specification before order'
+  ], 10, finalY + 45);
+
+  // Add signature
+  doc.setFont('helvetica', 'bold');
+  doc.text('CHEMBIO LIFESCIENCES', doc.internal.pageSize.getWidth() - 10, finalY + 60, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  doc.text('Authorized Signatory', doc.internal.pageSize.getWidth() - 10, finalY + 70, { align: 'right' });
+
+  doc.save(`Quotation-${quotation.id}.pdf`);
 };
 
-export const generateDOCX = async (quotation: Quotation, client: Client) => {
+export const generateWord = async (quotation: Quotation, client: Client) => {
   const doc = new Document({
     sections: [{
       properties: {},
       children: [
-        // Header with Logo and Company Details
+        // Company Header
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: "CHEMBIO",
+              size: 72,
+              bold: true,
+              color: "0057B7"
+            })
+          ],
+        }),
+        new Paragraph({
+          alignment: AlignmentType.RIGHT,
+          children: [
+            new TextRun({
+              text: "CHEMBIO LIFESCIENCES\n",
+              size: 32,
+              bold: true
+            }),
+            new TextRun({
+              text: "L-10,1st Floor, Himalaya Legend, Near Indirapuram Public School\n" +
+                    "Nyay Khand-1, Indirapuram, Ghaziabad-201014.\n" +
+                    "Email: chembio.sales@gmail.com\n" +
+                    "Tel: 0120 4909400\n" +
+                    "PAN No. AALFC0922C; GST No. 09AALFC0922C1ZU",
+              size: 20,
+            })
+          ],
+        }),
+
+        // Quotation Title
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: {
+            before: 400,
+            after: 400,
+          },
+          children: [
+            new TextRun({
+              text: "Quotation",
+              size: 28,
+              bold: true
+            })
+          ],
+        }),
+
+        // Client and Quotation Details Table
         new Table({
-          width: { size: 100, type: WidthType.PERCENTAGE },
+          width: {
+            size: 100,
+            type: WidthType.PERCENTAGE,
+          },
+          borders: {
+            top: { style: BorderStyle.NONE },
+            bottom: { style: BorderStyle.NONE },
+            left: { style: BorderStyle.NONE },
+            right: { style: BorderStyle.NONE },
+          },
           rows: [
             new TableRow({
               children: [
-                // Logo Cell (Left)
-                new TableCell({
-                  children: [new Paragraph({ text: '[Logo Placeholder]' })],
-                  width: { size: 30, type: WidthType.PERCENTAGE },
-                }),
-                // Company Details Cell (Right)
                 new TableCell({
                   children: [
                     new Paragraph({
                       children: [
-                        new TextRun({ text: COMPANY_NAME + '\n', size: 32, bold: true }),
-                        new TextRun({ text: COMPANY_ADDRESS + '\n', size: 20 }),
-                        new TextRun({ text: COMPANY_CITY + '\n', size: 20 }),
-                        new TextRun({ text: COMPANY_PHONE + '\n', size: 20 }),
-                        new TextRun({ text: COMPANY_EMAIL + '\n', size: 20 }),
-                        new TextRun({ text: COMPANY_GST + '\n', size: 20 }),
+                        new TextRun("To,\n"),
+                        new TextRun(client.company || ""),
+                        new TextRun("\n" + (client.address || "")),
+                        new TextRun(client.phone ? "\nTel.No.: " + client.phone : ""),
+                        new TextRun(client.name ? "\nKind Attn: " + client.name : ""),
                       ],
-                      alignment: AlignmentType.RIGHT,
                     }),
                   ],
-                  width: { size: 70, type: WidthType.PERCENTAGE },
+                  width: {
+                    size: 50,
+                    type: WidthType.PERCENTAGE,
+                  },
+                }),
+                new TableCell({
+                  children: [
+                    new Paragraph({
+                      children: [
+                        new TextRun("Your Ref: store@fraclabs.org\n"),
+                        new TextRun("Ref No: " + `CBLS/${format(new Date(), 'yy')}-${format(new Date(), 'yy')+1}/${quotation.id.slice(0, 4)}\n`),
+                        new TextRun("Date: " + format(new Date(quotation.createdAt), 'dd-MMM-yyyy')),
+                      ],
+                    }),
+                  ],
+                  width: {
+                    size: 50,
+                    type: WidthType.PERCENTAGE,
+                  },
                 }),
               ],
             }),
           ],
         }),
 
-        // Quotation Details and Client Info Table
-        new Table({
-          width: { size: 100, type: WidthType.PERCENTAGE },
-          rows: [
-            new TableRow({
-              children: [
-                // Client Details (Left)
-                new TableCell({
-                  children: [
-                    new Paragraph({
-                      children: [
-                        new TextRun({ text: 'To:\n', bold: true }),
-                        new TextRun({ text: client.name + '\n' }),
-                        new TextRun({ text: client.company + '\n' }),
-                        new TextRun({ text: `Email: ${client.email}\n` }),
-                        new TextRun({ text: `Phone: ${client.phone}\n` }),
-                      ],
-                    }),
-                  ],
-                  width: { size: 50, type: WidthType.PERCENTAGE },
-                }),
-                // Quotation Details (Right)
-                new TableCell({
-                  children: [
-                    new Table({
-                      width: { size: 100, type: WidthType.PERCENTAGE },
-                      rows: [
-                        new TableRow({
-                          children: [
-                            new TableCell({ children: [new Paragraph({ text: 'Quote/Performa Invoice', bold: true })] }),
-                            new TableCell({ children: [new Paragraph({ text: `QT-${quotation.id.slice(0, 8).toUpperCase()}` })] }),
-                          ],
-                        }),
-                        new TableRow({
-                          children: [
-                            new TableCell({ children: [new Paragraph({ text: 'Quotation Date', bold: true })] }),
-                            new TableCell({ children: [new Paragraph({ text: format(new Date(quotation.createdAt), 'dd/MM/yyyy') })] }),
-                          ],
-                        }),
-                        new TableRow({
-                          children: [
-                            new TableCell({ children: [new Paragraph({ text: 'Valid From', bold: true })] }),
-                            new TableCell({ children: [new Paragraph({ text: format(new Date(quotation.createdAt), 'dd/MM/yyyy') })] }),
-                          ],
-                        }),
-                        new TableRow({
-                          children: [
-                            new TableCell({ children: [new Paragraph({ text: 'Valid To', bold: true })] }),
-                            new TableCell({ children: [new Paragraph({ text: format(new Date(quotation.validUntil), 'dd/MM/yyyy') })] }),
-                          ],
-                        }),
-                      ],
-                    }),
-                  ],
-                  width: { size: 50, type: WidthType.PERCENTAGE },
-                }),
-              ],
-            }),
+        // Introduction Text
+        new Paragraph({
+          spacing: {
+            before: 400,
+            after: 200,
+          },
+          children: [
+            new TextRun("Dear Sir/Madam,\n"),
+            new TextRun("We wish to thank you for your interest in our Products. We hereby quote as below:"),
           ],
         }),
 
         // Items Table
         new Table({
-          width: { size: 100, type: WidthType.PERCENTAGE },
+          width: {
+            size: 100,
+            type: WidthType.PERCENTAGE,
+          },
           rows: [
-            // Header row
+            // Header Row
             new TableRow({
               children: [
-                'Sl.No.',
-                'Material No / Description / HSNCode',
-                'QTY/UOM',
-                'Unit Price',
-                'GST Rate',
-                'Discount',
-                'Total Price'
-              ].map((header, index) => 
+                "S. No.", "Cat no.", "Pack Size", "Product Description", "Qty.",
+                "Unit rate", "Discounted Value", "Expended value", "Gst %",
+                "GST value", "Total Price INR", "Lead time", "Make"
+              ].map(text => 
                 new TableCell({
-                  children: [new Paragraph({ 
-                    text: header, 
-                    alignment: AlignmentType.CENTER, 
-                    bold: true 
-                  })],
-                  width: {
-                    size: index === 0 ? 5 :  // Sl.No.
-                         index === 1 ? 30 :  // Description
-                         index === 2 ? 8 :   // QTY
-                         index === 3 ? 15 :  // Unit Price
-                         index === 4 ? 8 :   // GST
-                         index === 5 ? 8 :   // Discount
-                         18,                 // Total Price
-                    type: WidthType.PERCENTAGE,
-                  },
+                  children: [new Paragraph({ children: [new TextRun({ text, bold: true })] })],
                 })
               ),
             }),
-            // Data rows
+            // Data Rows
             ...quotation.items.map((item, index) => {
-              const total = calculateItemTotal(item);
+              const baseAmount = item.quantity * item.price;
+              const gstAmount = calculateGST(item);
               return new TableRow({
                 children: [
-                  new TableCell({ 
-                    children: [new Paragraph({ text: (index + 1).toString(), alignment: AlignmentType.CENTER })]
-                  }),
-                  new TableCell({ 
-                    children: [new Paragraph({ text: item.description })]
-                  }),
-                  new TableCell({ 
-                    children: [new Paragraph({ text: item.quantity.toString(), alignment: AlignmentType.CENTER })]
-                  }),
-                  new TableCell({ 
-                    children: [new Paragraph({ text: formatCurrency(item.price), alignment: AlignmentType.RIGHT })],
-                    margins: { right: 240 }  // Add right margin for price alignment
-                  }),
-                  new TableCell({ 
-                    children: [new Paragraph({ text: `${item.gst}%`, alignment: AlignmentType.CENTER })]
-                  }),
-                  new TableCell({ 
-                    children: [new Paragraph({ text: `${item.discount}%`, alignment: AlignmentType.CENTER })]
-                  }),
-                  new TableCell({ 
-                    children: [new Paragraph({ text: formatCurrency(total), alignment: AlignmentType.RIGHT })],
-                    margins: { right: 240 }  // Add right margin for price alignment
-                  }),
-                ],
+                  (index + 1).toString(),
+                  item.catalogNo || "",
+                  item.packSize || "",
+                  item.description,
+                  item.quantity.toString(),
+                  formatCurrency(item.price),
+                  formatCurrency(baseAmount),
+                  formatCurrency(baseAmount),
+                  `${item.gst}%`,
+                  formatCurrency(gstAmount),
+                  formatCurrency(baseAmount + gstAmount),
+                  "1-2 weeks",
+                  item.make || ""
+                ].map(text => 
+                  new TableCell({
+                    children: [new Paragraph({ children: [new TextRun({ text })] })],
+                  })
+                ),
               });
             }),
           ],
         }),
 
-        // Summary Section
-        new Table({
-          width: { size: 40, type: WidthType.PERCENTAGE },
-          alignment: AlignmentType.RIGHT,
-          rows: [
-            ...Object.entries(calculateTotals(quotation.items)).map(([key, value]) => 
-              new TableRow({
-                children: [
-                  new TableCell({
-                    children: [new Paragraph({ 
-                      text: key === 'subtotal' ? 'SUBTOTAL' : 
-                           key === 'totalGST' ? 'IGST' : 'GRAND TOTAL',
-                      bold: true 
-                    })],
-                  }),
-                  new TableCell({
-                    children: [new Paragraph({ 
-                      text: formatCurrency(value),
-                      alignment: AlignmentType.RIGHT
-                    })],
-                  }),
-                ],
-              })
+        // Bank Details
+        new Paragraph({
+          spacing: {
+            before: 400,
+          },
+          children: [
+            new TextRun({
+              text: "HDFC BANK LTD.\n",
+              bold: true
+            }),
+            new TextRun(
+              "Account No: 50200017511430 ; NEFT/RTGS IFCS : HDFC0000590\n" +
+              "Branch code:0590 ; Micro code : 110240081 ;Account type: Current account"
             ),
           ],
         }),
 
-        // Notes
+        // Terms and Conditions
         new Paragraph({
-          text: 'Notes:',
-          bold: true,
-          spacing: { before: 400, after: 200 },
-        }),
-        new Paragraph({
+          spacing: {
+            before: 400,
+          },
           children: [
-            new TextRun('• Prices quoted are for the stated quantities and the right is reserved to increase the price for lesser requirements.\n'),
-            new TextRun('• Product supply is subject to availability\n'),
+            new TextRun({
+              text: "Terms & Conditions:\n",
+              bold: true
+            }),
+            new TextRun(
+              "1) Payment: Payment within 15 days.\n" +
+              "2) Validity: 30Days\n" +
+              "3) Please check specification before order"
+            ),
           ],
         }),
 
-        // Bank Details
+        // Signature
         new Paragraph({
-          text: 'Bank Details:',
-          bold: true,
-          spacing: { before: 400, after: 200 },
-        }),
-        new Paragraph({
+          alignment: AlignmentType.RIGHT,
+          spacing: {
+            before: 400,
+          },
           children: [
-            new TextRun(`Bank: ${BANK_DETAILS.BANK}\n`),
-            new TextRun(`Account Number: ${BANK_DETAILS.ACCOUNT_NUMBER}\n`),
-            new TextRun(`IFSC Code: ${BANK_DETAILS.IFSC}\n`),
+            new TextRun({
+              text: "CHEMBIO LIFESCIENCES\n",
+              bold: true
+            }),
+            new TextRun("Authorized Signatory"),
           ],
-        }),
-
-        // Footer
-        new Paragraph({
-          text: 'This is a computer-generated document. No signature is required.',
-          alignment: AlignmentType.CENTER,
-          spacing: { before: 400 },
         }),
       ],
     }],
   });
 
-  // Generate and save document
-  const blob = await Packer.toBlob(doc);
+  const buffer = await Packer.toBuffer(doc);
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
@@ -484,5 +467,5 @@ export const testDocumentGeneration = async () => {
 
   // Generate both PDF and Word documents
   await generatePDF(sampleQuotation, sampleClient);
-  await generateDOCX(sampleQuotation, sampleClient);
+  await generateWord(sampleQuotation, sampleClient);
 };

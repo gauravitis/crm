@@ -16,10 +16,12 @@ import { db } from '../config/firebase';
 import { Invoice } from '../types/invoice';
 import { Client } from '../types/client';
 import { Vendor } from '../types/vendor';
+import { useItems } from './useItems';
 
 export const useInvoices = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { updateItemQuantities } = useItems();
 
   const getInvoices = useCallback(async (type?: 'SALES' | 'PURCHASE') => {
     setLoading(true);
@@ -50,6 +52,11 @@ export const useInvoices = () => {
               id: partyDoc.id,
               ...partyDoc.data()
             } as (Client | Vendor);
+            
+            // Update party details with the latest data
+            data.partyName = partyDetails.name;
+            data.partyAddress = partyDetails.address || data.partyAddress;
+            data.partyGST = partyDetails.gstNumber || data.partyGST;
           }
         }
         
@@ -90,85 +97,160 @@ export const useInvoices = () => {
       const year = currentDate.getFullYear().toString().slice(-2);
       const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
 
-      if (!lastInvoice) {
-        return `${prefix}/${year}${month}/0001`;
+      let sequence = 1;
+      if (lastInvoice) {
+        const lastNumber = lastInvoice.data().invoiceNumber;
+        const lastSequence = parseInt(lastNumber.slice(-4));
+        sequence = lastSequence + 1;
       }
 
-      const lastNumber = parseInt(lastInvoice.data().invoiceNumber.split('/')[2]);
-      const newNumber = (lastNumber + 1).toString().padStart(4, '0');
-      return `${prefix}/${year}${month}/${newNumber}`;
+      return `${prefix}${year}${month}${sequence.toString().padStart(4, '0')}`;
     } catch (err) {
       console.error('Error generating invoice number:', err);
-      return null;
+      throw err;
     }
   }, []);
 
   const addInvoice = useCallback(async (invoiceData: Omit<Invoice, 'id' | 'createdAt' | 'updatedAt'>) => {
     setLoading(true);
+    setError(null);
     try {
-      const now = Timestamp.now();
+      // First try to update item quantities
+      const success = await updateItemQuantities(
+        invoiceData.items.map(item => ({
+          id: item.id,
+          quantity: item.quantity
+        })),
+        invoiceData.type
+      );
+
+      if (!success) {
+        throw new Error('Failed to update item quantities');
+      }
+
+      const now = new Date();
       const docRef = await addDoc(collection(db, 'invoices'), {
         ...invoiceData,
+        type: invoiceData.type, // Explicitly set the type
+        createdAt: Timestamp.fromDate(now),
+        updatedAt: Timestamp.fromDate(now),
         date: Timestamp.fromDate(new Date(invoiceData.date)),
         dueDate: Timestamp.fromDate(new Date(invoiceData.dueDate)),
+        items: invoiceData.items.map(item => ({
+          ...item,
+          id: item.id || item.itemId, // Ensure we have the item ID
+        }))
+      });
+
+      return {
+        id: docRef.id,
+        ...invoiceData,
         createdAt: now,
         updatedAt: now,
-      });
-      return docRef.id;
+      };
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add invoice');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to add invoice';
+      setError(errorMessage);
+      console.error('Error adding invoice:', err);
       return null;
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [updateItemQuantities]);
 
-  const updateInvoice = useCallback(async (id: string, invoiceData: Partial<Omit<Invoice, 'id' | 'createdAt' | 'updatedAt'>>) => {
+  const updateInvoice = useCallback(async (
+    id: string, 
+    invoiceData: Partial<Invoice>, 
+    originalInvoice?: Invoice
+  ) => {
     setLoading(true);
+    setError(null);
     try {
-      const docRef = doc(db, 'invoices', id);
+      if (invoiceData.items && originalInvoice) {
+        // First revert the original quantities
+        await updateItemQuantities(
+          originalInvoice.items.map(item => ({
+            id: item.id,
+            quantity: item.quantity
+          })),
+          originalInvoice.type === 'SALES' ? 'PURCHASE' : 'SALES' // Reverse the operation
+        );
+
+        // Then apply the new quantities
+        const success = await updateItemQuantities(
+          invoiceData.items.map(item => ({
+            id: item.id,
+            quantity: item.quantity
+          })),
+          originalInvoice.type
+        );
+
+        if (!success) {
+          throw new Error('Failed to update item quantities');
+        }
+      }
+
+      const invoiceRef = doc(db, 'invoices', id);
       const updateData = {
         ...invoiceData,
-        updatedAt: Timestamp.now(),
+        updatedAt: Timestamp.fromDate(new Date()),
       };
-      
+
       if (invoiceData.date) {
         updateData.date = Timestamp.fromDate(new Date(invoiceData.date));
       }
       if (invoiceData.dueDate) {
         updateData.dueDate = Timestamp.fromDate(new Date(invoiceData.dueDate));
       }
-      
-      await updateDoc(docRef, updateData);
+
+      await updateDoc(invoiceRef, updateData);
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update invoice');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update invoice';
+      setError(errorMessage);
+      console.error('Error updating invoice:', err);
       return false;
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [updateItemQuantities]);
 
-  const deleteInvoice = useCallback(async (id: string) => {
+  const deleteInvoice = useCallback(async (id: string, invoice: Invoice) => {
     setLoading(true);
+    setError(null);
     try {
+      // First revert the quantities
+      const success = await updateItemQuantities(
+        invoice.items.map(item => ({
+          id: item.id,
+          quantity: item.quantity
+        })),
+        invoice.type === 'SALES' ? 'PURCHASE' : 'SALES' // Reverse the operation
+      );
+
+      if (!success) {
+        throw new Error('Failed to update item quantities');
+      }
+
       await deleteDoc(doc(db, 'invoices', id));
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete invoice');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete invoice';
+      setError(errorMessage);
+      console.error('Error deleting invoice:', err);
       return false;
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [updateItemQuantities]);
 
   return {
     loading,
     error,
     getInvoices,
-    generateInvoiceNumber,
     addInvoice,
     updateInvoice,
     deleteInvoice,
+    generateInvoiceNumber,
   };
 };

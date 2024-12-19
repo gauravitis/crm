@@ -4,10 +4,12 @@ import { InvoiceList } from '../components/invoices/InvoiceList';
 import { InvoiceForm } from '../components/invoices/InvoiceForm';
 import { InvoiceDetails } from '../components/invoices/InvoiceDetails';
 import { useInvoices } from '../hooks/useInvoices';
+import { useVendors } from '../hooks/useVendors';
 import { Plus } from 'lucide-react';
 
 export const PurchaseInvoices = () => {
   const { addInvoice, updateInvoice, deleteInvoice } = useInvoices();
+  const { vendors } = useVendors();
   const [showForm, setShowForm] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | undefined>();
@@ -44,6 +46,17 @@ export const PurchaseInvoices = () => {
       await deleteInvoice(invoice.id);
       listRef.current?.loadInvoices();
     }
+  };
+
+  const getVendorName = (invoice: Invoice) => {
+    // First try to use the partyName from the invoice
+    if (invoice.partyName) {
+      return invoice.partyName;
+    }
+    
+    // If partyName is not available, try to find the vendor by partyId
+    const vendor = vendors.find(v => v.id === invoice.partyId);
+    return vendor ? vendor.name : 'Unknown Vendor';
   };
 
   return (
@@ -89,6 +102,7 @@ export const PurchaseInvoices = () => {
             setShowDetails(false);
             setSelectedInvoice(undefined);
           }}
+          clientName={getVendorName(selectedInvoice)}
         />
       )}
     </div>
