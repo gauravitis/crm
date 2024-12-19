@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard';
 import Clients from './pages/Clients';
 import Items from './pages/Items';
 import Quotations from './pages/Quotations';
+import QuotationGenerator from './pages/QuotationGenerator';
 import Sales from './pages/Sales';
 import KanbanBoard from './pages/KanbanBoard';
 import { Vendors } from './pages/Vendors';
@@ -45,6 +46,7 @@ export default function App() {
                   <Route path="/vendors" element={<Vendors />} />
                   <Route path="/items" element={<Items />} />
                   <Route path="/quotations" element={<Quotations />} />
+                  <Route path="/quotation-generator" element={<QuotationGenerator />} />
                   <Route path="/sales" element={<Sales />} />
                   <Route path="/sales-invoices" element={<SalesInvoices />} />
                   <Route path="/purchase-invoices" element={<PurchaseInvoices />} />

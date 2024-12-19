@@ -2,13 +2,22 @@ import React from 'react';
 import { Quotation } from '../../types';
 import { useClients } from '../../hooks/useClients';
 import { format } from 'date-fns';
-import { generatePDF, generateDOCX } from '../../utils/documentGenerator';
-import { FileText, FileType } from 'lucide-react';
+import { generateWord } from '../../utils/documentGenerator';
+import { FileText } from 'lucide-react';
+import { QuotationFormData } from '../../types/quotation-generator';
 
 interface QuotationDetailsProps {
   quotation: Quotation;
   onClose: () => void;
 }
+
+const calculateItemTotal = (item: any) => {
+  const subtotal = item.quantity * item.price;
+  const discountAmount = (subtotal * item.discount) / 100;
+  const afterDiscount = subtotal - discountAmount;
+  const gstAmount = (afterDiscount * item.gst) / 100;
+  return afterDiscount + gstAmount;
+};
 
 export default function QuotationDetails({ quotation, onClose }: QuotationDetailsProps) {
   const { clients } = useClients();
@@ -21,53 +30,71 @@ export default function QuotationDetails({ quotation, onClose }: QuotationDetail
     rejected: 'bg-red-100 text-red-800',
   };
 
+  const convertToFormData = (quotation: Quotation, client: any): QuotationFormData => {
+    return {
+      clientDetails: {
+        name: client.name || '',
+        company: client.company || '',
+        address: client.address || '',
+        phone: client.phone || '',
+        email: client.email || '',
+      },
+      items: quotation.items.map(item => ({
+        id: item.id,
+        catalogNo: item.catalogNo || '',
+        packSize: item.packSize || '',
+        description: item.description,
+        quantity: item.quantity,
+        unitRate: item.price,
+        gst: item.gst,
+      })),
+      terms: [
+        'Payment: Payment within 15 days.',
+        'Validity: 30 Days',
+        'Please check specification before order'
+      ],
+      bankDetails: {
+        bankName: 'HDFC BANK LTD.',
+        accountNo: '50200017511430',
+        ifscCode: 'HDFC0000590',
+        branchCode: '0590'
+      }
+    };
+  };
+
+  const handleGenerateWord = async () => {
+    try {
+      if (!client) {
+        alert('Client information not found');
+        return;
+      }
+
+      const formData = convertToFormData(quotation, client);
+      await generateWord(formData);
+    } catch (error) {
+      console.error('Error generating Word document:', error);
+      alert('Error generating Word document. Please try again.');
+    }
+  };
+
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-[800px] shadow-lg rounded-md bg-white">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Quotation Details</h2>
-          <div className="flex space-x-2">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold">Quotation Details</h2>
+          <div className="space-x-2">
             <button
-              onClick={() => {
-                try {
-                  if (client) {
-                    generatePDF(quotation, client);
-                  } else {
-                    alert('Client information not found');
-                  }
-                } catch (error) {
-                  console.error('Error generating PDF:', error);
-                  alert('Error generating PDF. Please try again.');
-                }
-              }}
-              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-            >
-              <FileType className="h-4 w-4 mr-2" />
-              Export PDF
-            </button>
-            <button
-              onClick={() => {
-                try {
-                  if (client) {
-                    generateDOCX(quotation, client);
-                  } else {
-                    alert('Client information not found');
-                  }
-                } catch (error) {
-                  console.error('Error generating Word document:', error);
-                  alert('Error generating Word document. Please try again.');
-                }
-              }}
-              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              onClick={handleGenerateWord}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 inline-flex items-center"
             >
               <FileText className="h-4 w-4 mr-2" />
-              Export Word
+              Generate Word
             </button>
             <button
               onClick={onClose}
-              className="text-gray-500 hover:text-gray-700"
+              className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
             >
-              ✕
+              Close
             </button>
           </div>
         </div>
@@ -115,7 +142,7 @@ export default function QuotationDetails({ quotation, onClose }: QuotationDetail
                       <td className="px-4 py-2 whitespace-nowrap">₹{item.price.toFixed(2)}</td>
                       <td className="px-4 py-2 whitespace-nowrap">{item.discount}%</td>
                       <td className="px-4 py-2 whitespace-nowrap">{item.gst}%</td>
-                      <td className="px-4 py-2 whitespace-nowrap">₹{item.total.toFixed(2)}</td>
+                      <td className="px-4 py-2 whitespace-nowrap">₹{calculateItemTotal(item).toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -125,7 +152,7 @@ export default function QuotationDetails({ quotation, onClose }: QuotationDetail
 
           <div className="text-right">
             <p className="text-sm text-gray-600">Total Amount</p>
-            <p className="text-lg font-semibold">₹{quotation.items.reduce((sum, item) => sum + item.total, 0).toFixed(2)}</p>
+            <p className="text-lg font-semibold">₹{quotation.items.reduce((sum, item) => sum + calculateItemTotal(item), 0).toFixed(2)}</p>
           </div>
         </div>
       </div>
