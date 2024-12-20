@@ -35,11 +35,11 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
         <Router>
-          <div className="flex h-screen bg-gray-100">
+          <div className="flex min-h-screen bg-gray-100">
             <Sidebar />
-            <div className="flex-1 flex flex-col ml-64">
+            <div className="flex-1 flex flex-col lg:ml-64 ml-0">
               <Header />
-              <main className="flex-1 overflow-y-auto">
+              <main className="flex-1 overflow-x-hidden overflow-y-auto p-4">
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/clients" element={<Clients />} />

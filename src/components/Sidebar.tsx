@@ -18,32 +18,46 @@ const navigation = [
 
 export default function Sidebar() {
   const location = useLocation();
+  const [isOpen, setIsOpen] = React.useState(false);
 
   return (
-    <div className="flex flex-col w-64 bg-gray-900 text-white h-screen fixed">
-      <div className="p-4">
-        <h1 className="text-2xl font-bold">CRM Pro</h1>
+    <>
+      {/* Mobile menu button */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="lg:hidden fixed top-4 left-4 z-20 p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700"
+      >
+        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
+        </svg>
+      </button>
+
+      {/* Sidebar */}
+      <div className={`${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transform fixed lg:sticky top-0 left-0 w-64 bg-gray-900 text-white h-screen transition-transform duration-200 ease-in-out z-10`}>
+        <div className="p-4">
+          <h1 className="text-2xl font-bold">CRM Pro</h1>
+        </div>
+        <nav className="flex-1 space-y-1 px-2">
+          {navigation.map((item) => {
+            const isActive = location.pathname === item.href;
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.name}
+                to={item.href}
+                className={`${
+                  isActive
+                    ? 'bg-gray-800 text-white'
+                    : 'text-gray-300 hover:bg-gray-700'
+                } group flex items-center px-2 py-2 text-sm font-medium rounded-md`}
+              >
+                <Icon className="mr-3 h-5 w-5" />
+                {item.name}
+              </Link>
+            );
+          })}
+        </nav>
       </div>
-      <nav className="flex-1 space-y-1 px-2">
-        {navigation.map((item) => {
-          const isActive = location.pathname === item.href;
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.name}
-              to={item.href}
-              className={`${
-                isActive
-                  ? 'bg-gray-800 text-white'
-                  : 'text-gray-300 hover:bg-gray-700'
-              } group flex items-center px-2 py-2 text-sm font-medium rounded-md`}
-            >
-              <Icon className="mr-3 h-5 w-5" />
-              {item.name}
-            </Link>
-          );
-        })}
-      </nav>
-    </div>
+    </>
   );
 }
