@@ -47,43 +47,31 @@ export interface QuotationProduct {
   gst_percent: number;
   gst_value: number;
   total_price: number;
-  lead_time: string;
-  make: string;
+  lead_time?: string;
+  make?: string;
 }
 
-export interface QuotationParty {
+export interface BillTo {
   name: string;
   address: string;
   phone: string;
   email: string;
-  gst?: string;
 }
 
 export interface QuotationData {
-  billTo: QuotationParty;
-  billFrom: QuotationParty & {
-    gst: string;
-    pan: string;
-  };
+  id?: string;
   quotationRef: string;
+  billTo: BillTo;
   quotationDate: string;
   validTill: string;
   items: QuotationProduct[];
   subTotal: number;
   tax: number;
   grandTotal: number;
-  notes: string;
   paymentTerms: string;
-
-  // Bank Details (Pre-filled)
-  bankDetails: {
-    bankName: string;
-    accountNo: string;
-    ifscCode: string;
-    branchCode: string;
-    microCode: string;
-    accountType: string;
-  };
+  notes: string;
+  status: 'PENDING' | 'SENT' | 'APPROVED' | 'REJECTED';
+  createdAt: string;
 }
 
 export const QUOTATION_TEMPLATES: QuotationTemplate[] = [

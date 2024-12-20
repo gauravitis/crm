@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs, query, orderBy, limit, where, Timestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { startOfMonth, endOfMonth, subMonths, parseISO } from 'date-fns';
 
 interface DashboardStats {
   totalClients: number;
@@ -29,6 +30,14 @@ interface DashboardStats {
     outstandingPayments: number;
   };
 }
+
+const parseFirebaseDate = (date: any): Date => {
+  if (!date) return new Date();
+  if (date instanceof Timestamp) return date.toDate();
+  if (typeof date === 'string') return parseISO(date);
+  if (date instanceof Date) return date;
+  return new Date();
+};
 
 export function useDashboardStats() {
   const [stats, setStats] = useState<DashboardStats>({
@@ -67,7 +76,7 @@ export function useDashboardStats() {
         const recentClients = recentClientsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate() || new Date(),
+          createdAt: parseFirebaseDate(doc.data().createdAt),
         }));
 
         // Fetch items
@@ -79,7 +88,7 @@ export function useDashboardStats() {
         const allItems = itemsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate() || new Date(),
+          createdAt: parseFirebaseDate(doc.data().createdAt),
         }));
 
         allItems.forEach(item => {
@@ -91,71 +100,77 @@ export function useDashboardStats() {
           .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
           .slice(0, 5);
 
-        // Fetch invoices for revenue calculations
-        const invoicesSnapshot = await getDocs(collection(db, 'invoices'));
+        // Fetch completed quotations for revenue calculations
+        const quotationsSnapshot = await getDocs(
+          query(collection(db, 'quotations'), where('status', '==', 'COMPLETED'))
+        );
+        
+        const quotations = quotationsSnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            completedAt: parseFirebaseDate(data.completedAt || data.createdAt),
+            grandTotal: Number(data.grandTotal) || 0
+          };
+        });
+
+        // Calculate total revenue and recent transactions
         let totalRevenue = 0;
         const recentTransactions: DashboardStats['recentTransactions'] = [];
-        const productSales: Record<string, { count: number; revenue: number; name: string }> = {};
-
-        invoicesSnapshot.docs.forEach(doc => {
-          const invoice = doc.data();
-          totalRevenue += invoice.totalAmount || 0;
-
-          // Process recent transactions
-          if (invoice.createdAt) {
-            recentTransactions.push({
-              id: doc.id,
-              clientName: invoice.clientName,
-              amount: invoice.totalAmount,
-              date: invoice.createdAt.toDate(),
-              status: invoice.status || 'completed',
-            });
-          }
-
-          // Process product sales
-          invoice.items?.forEach((item: any) => {
-            if (!productSales[item.id]) {
-              productSales[item.id] = {
-                count: 0,
-                revenue: 0,
-                name: item.name,
-              };
-            }
-            productSales[item.id].count += item.quantity || 0;
-            productSales[item.id].revenue += (item.price * item.quantity) || 0;
+        
+        quotations.forEach(quotation => {
+          totalRevenue += quotation.grandTotal;
+          
+          recentTransactions.push({
+            id: quotation.id,
+            clientName: quotation.billTo?.name || 'Unknown Client',
+            amount: quotation.grandTotal,
+            date: quotation.completedAt,
+            status: 'completed'
           });
         });
 
-        // Calculate top products
-        const topProducts = Object.entries(productSales)
-          .map(([id, data]) => ({
-            id,
-            name: data.name,
-            soldCount: data.count,
-            revenue: data.revenue,
-          }))
-          .sort((a, b) => b.revenue - a.revenue)
-          .slice(0, 5);
+        // Calculate growth rate (comparing this month to last month)
+        const now = new Date();
+        const thisMonthStart = startOfMonth(now);
+        const thisMonthEnd = endOfMonth(now);
+        const lastMonthStart = startOfMonth(subMonths(now, 1));
+        const lastMonthEnd = endOfMonth(subMonths(now, 1));
 
-        // Generate revenue data for the chart (last 30 days)
-        const revenueData = Array.from({ length: 30 }, (_, i) => {
-          const date = new Date();
-          date.setDate(date.getDate() - i);
-          return {
-            date: date.toLocaleDateString(),
-            amount: Math.random() * 10000, // Replace with actual daily revenue calculation
-          };
-        }).reverse();
+        const thisMonthRevenue = quotations
+          .filter(q => q.completedAt >= thisMonthStart && q.completedAt <= thisMonthEnd)
+          .reduce((sum, q) => sum + q.grandTotal, 0);
 
-        // Calculate sales metrics
-        const salesMetrics = {
-          growthRate: 12, // Calculate actual growth rate
-          averageOrderValue: totalRevenue / invoicesSnapshot.size || 0,
-          outstandingPayments: recentTransactions
-            .filter(t => t.status === 'pending')
-            .reduce((sum, t) => sum + t.amount, 0),
-        };
+        const lastMonthRevenue = quotations
+          .filter(q => q.completedAt >= lastMonthStart && q.completedAt <= lastMonthEnd)
+          .reduce((sum, q) => sum + q.grandTotal, 0);
 
+        const growthRate = lastMonthRevenue === 0 ? 0 : 
+          ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;
+
+        // Calculate revenue data for chart (last 6 months)
+        const revenueData = [];
+        for (let i = 5; i >= 0; i--) {
+          const monthDate = subMonths(now, i);
+          const monthStart = startOfMonth(monthDate);
+          const monthEnd = endOfMonth(monthDate);
+          
+          const monthRevenue = quotations
+            .filter(q => q.completedAt >= monthStart && q.completedAt <= monthEnd)
+            .reduce((sum, q) => sum + q.grandTotal, 0);
+
+          revenueData.push({
+            date: monthDate.toLocaleString('default', { month: 'short' }),
+            amount: monthRevenue
+          });
+        }
+
+        // Calculate average order value
+        const averageOrderValue = quotations.length === 0 ? 0 :
+          totalRevenue / quotations.length;
+
+        // Update stats
         setStats({
           totalClients,
           totalItems,
@@ -164,15 +179,17 @@ export function useDashboardStats() {
           recentItems,
           totalInventoryValue,
           revenueData,
-          recentTransactions: recentTransactions
-            .sort((a, b) => b.date.getTime() - a.date.getTime())
-            .slice(0, 5),
-          topProducts,
-          salesMetrics,
+          recentTransactions: recentTransactions.sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5),
+          topProducts: [], // This can be implemented later if needed
+          salesMetrics: {
+            growthRate,
+            averageOrderValue,
+            outstandingPayments: 0, // This can be calculated if needed
+          },
         });
       } catch (err) {
         console.error('Error fetching dashboard stats:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch dashboard statistics');
+        setError('Failed to load dashboard statistics');
       } finally {
         setLoading(false);
       }

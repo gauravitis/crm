@@ -1,85 +1,80 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Quotation } from '../types';
-import { generateId } from '../utils/generateId';
-
-const QUOTATIONS_STORAGE_KEY = 'quotations';
+import { useState, useEffect } from 'react';
+import { QuotationData } from '../types/quotation-generator';
+import { quotationService } from '../services/quotationService';
+import { toast } from 'react-toastify';
 
 export function useQuotations() {
-  const [quotations, setQuotations] = useState<Quotation[]>(() => {
-    const savedQuotations = localStorage.getItem(QUOTATIONS_STORAGE_KEY);
-    if (savedQuotations) {
-      try {
-        const parsed = JSON.parse(savedQuotations);
-        console.log('Loaded from storage:', parsed); // Debug log
-        return parsed.map((q: any) => ({
-          ...q,
-          createdAt: new Date(q.createdAt),
-          validUntil: new Date(q.validUntil),
-          total: Number(q.total) || 0, // Ensure total is a number
-          items: q.items.map((item: any) => ({
-            ...item,
-            quantity: Number(item.quantity) || 0,
-            price: Number(item.price) || 0,
-            discount: Number(item.discount) || 0,
-            gst: Number(item.gst) || 0,
-            total: Number(item.total) || 0
-          }))
-        }));
-      } catch (error) {
-        console.error('Error parsing saved quotations:', error);
-        return [];
-      }
-    }
-    return [];
-  });
+  const [quotations, setQuotations] = useState<QuotationData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Save quotations to localStorage whenever they change
   useEffect(() => {
-    console.log('Saving to storage:', quotations); // Debug log
-    localStorage.setItem(QUOTATIONS_STORAGE_KEY, JSON.stringify(quotations));
-  }, [quotations]);
-
-  const addQuotation = useCallback((data: Omit<Quotation, 'id'>) => {
-    const newQuotation: Quotation = {
-      ...data,
-      id: data.id || generateId(),
-      createdAt: new Date(data.createdAt),
-      validUntil: new Date(data.validUntil),
-      total: Number(data.total) || 0,
-      items: data.items.map(item => ({
-        ...item,
-        quantity: Number(item.quantity) || 0,
-        price: Number(item.price) || 0,
-        discount: Number(item.discount) || 0,
-        gst: Number(item.gst) || 0,
-        total: Number(item.total) || 0
-      }))
-    };
-    console.log('Adding quotation:', newQuotation); // Debug log
-    setQuotations(prev => [...prev, newQuotation]);
+    fetchQuotations();
   }, []);
 
-  const updateQuotation = useCallback((id: string, data: Partial<Quotation>) => {
-    console.log('Updating quotation:', id, data);
-    setQuotations(prev => {
-      const newQuotations = prev.map(quotation => 
-        quotation.id === id
-          ? { ...quotation, ...data }
-          : quotation
+  const fetchQuotations = async () => {
+    try {
+      setLoading(true);
+      const data = await quotationService.getQuotations();
+      setQuotations(data);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching quotations:', err);
+      setError('Failed to fetch quotations');
+      toast.error('Failed to fetch quotations');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addQuotation = async (quotation: Omit<QuotationData, 'id'>) => {
+    try {
+      const newQuotation = await quotationService.addQuotation(quotation);
+      setQuotations(prev => [...prev, newQuotation]);
+      toast.success('Quotation added successfully');
+      return newQuotation;
+    } catch (err) {
+      console.error('Error adding quotation:', err);
+      toast.error('Failed to add quotation');
+      throw err;
+    }
+  };
+
+  const updateQuotation = async (quotation: QuotationData) => {
+    try {
+      const { id, ...updateData } = quotation;
+      await quotationService.updateQuotation(id, updateData);
+      setQuotations(prev =>
+        prev.map(q => (q.id === id ? quotation : q))
       );
-      console.log('Updated quotations:', newQuotations);
-      return newQuotations;
-    });
-  }, []);
+      toast.success('Quotation updated successfully');
+      return quotation;
+    } catch (err) {
+      console.error('Error updating quotation:', err);
+      toast.error('Failed to update quotation');
+      throw err;
+    }
+  };
 
-  const deleteQuotation = useCallback((id: string) => {
-    setQuotations(prev => prev.filter(quotation => quotation.id !== id));
-  }, []);
+  const deleteQuotation = async (id: string) => {
+    try {
+      await quotationService.deleteQuotation(id);
+      setQuotations(prev => prev.filter(q => q.id !== id));
+      toast.success('Quotation deleted successfully');
+    } catch (err) {
+      console.error('Error deleting quotation:', err);
+      toast.error('Failed to delete quotation');
+      throw err;
+    }
+  };
 
   return {
     quotations,
+    loading,
+    error,
     addQuotation,
     updateQuotation,
-    deleteQuotation
+    deleteQuotation,
+    refreshQuotations: fetchQuotations,
   };
 }

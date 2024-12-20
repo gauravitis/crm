@@ -59,28 +59,35 @@ export function useCombinedSalesStats() {
       const yearStart = startOfYear(now);
       const yearEnd = endOfYear(now);
 
-      // Filter approved quotations for different periods
-      const approvedQuotations = quotations.filter(q => q.status === 'approved');
+      // Get completed orders (sales)
+      const completedQuotations = quotations.filter(q => q.status === 'COMPLETED');
 
-      const todayQuotations = approvedQuotations.filter(q => {
-        const date = new Date(q.createdAt);
+      // Filter quotations for different periods
+      const todayQuotations = completedQuotations.filter(q => {
+        const date = new Date(q.completedAt || q.createdAt);
         return date >= todayStart && date <= todayEnd;
       });
 
-      const thisMonthQuotations = approvedQuotations.filter(q => {
-        const date = new Date(q.createdAt);
+      const thisMonthQuotations = completedQuotations.filter(q => {
+        const date = new Date(q.completedAt || q.createdAt);
         return date >= monthStart && date <= monthEnd;
       });
 
-      const lastMonthQuotations = approvedQuotations.filter(q => {
-        const date = new Date(q.createdAt);
+      const lastMonthQuotations = completedQuotations.filter(q => {
+        const date = new Date(q.completedAt || q.createdAt);
         return date >= lastMonthStart && date <= lastMonthEnd;
       });
 
-      const thisYearQuotations = approvedQuotations.filter(q => {
-        const date = new Date(q.createdAt);
+      const thisYearQuotations = completedQuotations.filter(q => {
+        const date = new Date(q.completedAt || q.createdAt);
         return date >= yearStart && date <= yearEnd;
       });
+
+      // Calculate totals
+      const todayTotal = todayQuotations.reduce((sum, q) => sum + (q.grandTotal || 0), 0);
+      const thisMonthTotal = thisMonthQuotations.reduce((sum, q) => sum + (q.grandTotal || 0), 0);
+      const lastMonthTotal = lastMonthQuotations.reduce((sum, q) => sum + (q.grandTotal || 0), 0);
+      const thisYearTotal = thisYearQuotations.reduce((sum, q) => sum + (q.grandTotal || 0), 0);
 
       // Calculate monthly data
       const monthlyData = [];
@@ -89,48 +96,47 @@ export function useCombinedSalesStats() {
         const monthStartDate = startOfMonth(monthDate);
         const monthEndDate = endOfMonth(monthDate);
         
-        const monthQuotations = approvedQuotations.filter(q => {
-          const date = new Date(q.createdAt);
+        const monthQuotations = completedQuotations.filter(q => {
+          const date = new Date(q.completedAt || q.createdAt);
           return date >= monthStartDate && date <= monthEndDate;
         });
 
-        const monthlyQuotationsTotal = monthQuotations.reduce((sum, q) => sum + q.total, 0);
+        const monthlyTotal = monthQuotations.reduce((sum, q) => sum + (q.grandTotal || 0), 0);
 
         monthlyData.push({
           month: monthDate.toLocaleString('default', { month: 'short' }),
-          sales: 0, // We'll add actual sales data when integrated with Firebase
-          approvedQuotations: monthlyQuotationsTotal,
-          total: monthlyQuotationsTotal // Will include sales when integrated
+          sales: monthlyTotal,
+          approvedQuotations: 0,
+          total: monthlyTotal
         });
       }
 
       setStats({
         today: {
-          sales: 0, // Will be added when integrated with Firebase
-          approvedQuotations: todayQuotations.reduce((sum, q) => sum + q.total, 0),
-          total: todayQuotations.reduce((sum, q) => sum + q.total, 0)
+          sales: todayTotal,
+          approvedQuotations: 0,
+          total: todayTotal
         },
         thisMonth: {
-          sales: 0,
-          approvedQuotations: thisMonthQuotations.reduce((sum, q) => sum + q.total, 0),
-          total: thisMonthQuotations.reduce((sum, q) => sum + q.total, 0)
+          sales: thisMonthTotal,
+          approvedQuotations: 0,
+          total: thisMonthTotal
         },
         lastMonth: {
-          sales: 0,
-          approvedQuotations: lastMonthQuotations.reduce((sum, q) => sum + q.total, 0),
-          total: lastMonthQuotations.reduce((sum, q) => sum + q.total, 0)
+          sales: lastMonthTotal,
+          approvedQuotations: 0,
+          total: lastMonthTotal
         },
         thisYear: {
-          sales: 0,
-          approvedQuotations: thisYearQuotations.reduce((sum, q) => sum + q.total, 0),
-          total: thisYearQuotations.reduce((sum, q) => sum + q.total, 0)
+          sales: thisYearTotal,
+          approvedQuotations: 0,
+          total: thisYearTotal
         },
-        monthlyData,
+        monthlyData
       });
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to calculate sales statistics';
-      setError(errorMessage);
-      console.error('Error calculating sales stats:', err);
+    } catch (error) {
+      console.error('Error calculating sales stats:', error);
+      setError('Failed to calculate sales statistics');
     } finally {
       setLoading(false);
     }
@@ -140,10 +146,5 @@ export function useCombinedSalesStats() {
     calculateStats();
   }, [calculateStats]);
 
-  return {
-    stats,
-    loading,
-    error,
-    refreshStats: calculateStats,
-  };
+  return { stats, loading, error };
 }

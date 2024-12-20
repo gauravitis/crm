@@ -14,8 +14,7 @@ import QuotationGenerator from './pages/QuotationGenerator';
 import Sales from './pages/Sales';
 import KanbanBoard from './pages/KanbanBoard';
 import { Vendors } from './pages/Vendors';
-import { SalesInvoices } from './pages/SalesInvoices';
-import { PurchaseInvoices } from './pages/PurchaseInvoices';
+import PendingOrders from './pages/PendingOrders';
 
 // Initialize QueryClient
 const queryClient = new QueryClient({
@@ -47,9 +46,8 @@ export default function App() {
                   <Route path="/items" element={<Items />} />
                   <Route path="/quotations" element={<Quotations />} />
                   <Route path="/quotation-generator" element={<QuotationGenerator />} />
+                  <Route path="/pending-orders" element={<PendingOrders />} />
                   <Route path="/sales" element={<Sales />} />
-                  <Route path="/sales-invoices" element={<SalesInvoices />} />
-                  <Route path="/purchase-invoices" element={<PurchaseInvoices />} />
                   <Route path="/tasks" element={<KanbanBoard />} />
                 </Routes>
               </main>

@@ -23,17 +23,19 @@ export const CreateItemModal: React.FC<CreateItemModalProps> = ({
 }) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[95vw] md:max-w-[80vw] lg:max-w-[1200px] w-full">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="text-xl font-semibold">
             {initialData ? 'Edit Item' : 'Create New Item'}
           </DialogTitle>
         </DialogHeader>
-        <ItemForm
-          onSubmit={onSubmit}
-          onCancel={onClose}
-          initialData={initialData}
-        />
+        <div className="max-h-[80vh] overflow-y-auto">
+          <ItemForm
+            onSubmit={onSubmit}
+            onCancel={onClose}
+            initialData={initialData}
+          />
+        </div>
       </DialogContent>
     </Dialog>
   );
