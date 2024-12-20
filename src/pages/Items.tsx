@@ -86,8 +86,8 @@ export default function Items() {
       )}
 
       {isFormOpen && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-start justify-center p-4 overflow-y-auto z-50">
+          <div className="relative bg-white rounded-lg p-6 max-w-md w-full my-8">
             <h2 className="text-lg font-medium mb-4">
               {editingItem ? 'Edit Item' : 'Add New Item'}
             </h2>
