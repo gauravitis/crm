@@ -58,7 +58,7 @@ export const VendorForm: React.FC<VendorFormProps> = ({ vendor, onSubmit, onClos
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
-      <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md mx-4 my-8">
         <div className="flex items-center justify-between p-4 border-b">
           <h3 className="text-lg font-medium">{vendor ? 'Edit Vendor' : 'Add Vendor'}</h3>
           <button

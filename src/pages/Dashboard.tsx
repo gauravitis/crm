@@ -50,8 +50,8 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="py-6">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="py-6 min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-hidden">
         <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
 
         {/* Stats Grid */}
