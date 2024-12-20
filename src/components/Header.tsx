@@ -3,10 +3,10 @@ import { Bell, Search, User } from 'lucide-react';
 
 export default function Header() {
   return (
-    <header className="bg-white shadow-sm sticky top-0 z-10">
-      <div className="mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 justify-between items-center">
-          <div className="flex-1 flex items-center">
+    <header className="bg-white shadow-sm">
+      <div className="px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 items-center justify-between">
+          <div className="flex-1 flex items-center lg:ml-0 ml-8">
             <div className="w-full max-w-lg lg:max-w-xs">
               <label htmlFor="search" className="sr-only">Search</label>
               <div className="relative">

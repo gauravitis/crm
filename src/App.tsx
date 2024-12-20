@@ -37,9 +37,9 @@ export default function App() {
         <Router>
           <div className="flex min-h-screen bg-gray-100">
             <Sidebar />
-            <div className="flex-1 flex flex-col lg:ml-64 ml-0">
+            <div className="flex-1 flex flex-col">
               <Header />
-              <main className="flex-1 overflow-x-hidden overflow-y-auto p-4">
+              <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-4">
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/clients" element={<Clients />} />
