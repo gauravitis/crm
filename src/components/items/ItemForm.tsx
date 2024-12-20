@@ -1,236 +1,183 @@
 import React from 'react';
-import { Item } from '../../types/item';
+import { useForm } from 'react-hook-form';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
 
 interface ItemFormProps {
-  onSubmit: (data: Omit<Item, 'id' | 'createdAt'>) => void;
+  onSubmit: (data: any) => void;
   onCancel: () => void;
-  initialData?: Item;
+  initialData?: any;
 }
 
 export default function ItemForm({ onSubmit, onCancel, initialData }: ItemFormProps) {
-  const [formData, setFormData] = React.useState({
-    name: initialData?.name || '',
-    catalogueId: initialData?.catalogueId || '',
-    sku: initialData?.sku || '',
-    packSize: initialData?.packSize || '',
-    price: initialData?.price || '',
-    quantity: initialData?.quantity || 0,
-    hsnCode: initialData?.hsnCode || '',
-    batchNo: initialData?.batchNo || '',
-    mfgDate: initialData?.mfgDate ? new Date(initialData.mfgDate).toISOString().split('T')[0] : '',
-    expDate: initialData?.expDate ? new Date(initialData.expDate).toISOString().split('T')[0] : '',
-    brand: initialData?.brand || '',
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    defaultValues: initialData || {}
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit({
-      ...formData,
-      price: Number(formData.price),
-      quantity: Number(formData.quantity),
-      mfgDate: formData.mfgDate ? new Date(formData.mfgDate) : null,
-      expDate: formData.expDate ? new Date(formData.expDate) : null,
-    });
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto">
-      <div className="space-y-4 pb-4">
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-            Item Name
-          </label>
-          <input
-            type="text"
-            name="name"
-            id="name"
-            required
-            value={formData.name}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="catalogueId" className="block text-sm font-medium text-gray-700">
-            Catalogue ID
-          </label>
-          <input
-            type="text"
-            name="catalogueId"
-            id="catalogueId"
-            required
-            value={formData.catalogueId}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="sku" className="block text-sm font-medium text-gray-700">
-            SKU
-          </label>
-          <input
-            type="text"
-            name="sku"
-            id="sku"
-            required
-            value={formData.sku}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="packSize" className="block text-sm font-medium text-gray-700">
-            Pack Size
-          </label>
-          <input
-            type="text"
-            name="packSize"
-            id="packSize"
-            required
-            value={formData.packSize}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="hsnCode" className="block text-sm font-medium text-gray-700">
-            HSN Code
-          </label>
-          <input
-            type="text"
-            name="hsnCode"
-            id="hsnCode"
-            required
-            value={formData.hsnCode}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="batchNo" className="block text-sm font-medium text-gray-700">
-            Batch Number
-          </label>
-          <input
-            type="text"
-            name="batchNo"
-            id="batchNo"
-            required
-            value={formData.batchNo}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="mfgDate" className="block text-sm font-medium text-gray-700">
-            Manufacturing Date
-          </label>
-          <input
-            type="date"
-            name="mfgDate"
-            id="mfgDate"
-            value={formData.mfgDate}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="expDate" className="block text-sm font-medium text-gray-700">
-            Expiry Date
-          </label>
-          <input
-            type="date"
-            name="expDate"
-            id="expDate"
-            value={formData.expDate}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="brand" className="block text-sm font-medium text-gray-700">
-            Brand
-          </label>
-          <input
-            type="text"
-            name="brand"
-            id="brand"
-            required
-            value={formData.brand}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="price" className="block text-sm font-medium text-gray-700">
-              Price
-            </label>
-            <div className="mt-1 relative rounded-md shadow-sm">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <span className="text-gray-500 sm:text-sm">₹</span>
-              </div>
-              <input
-                type="number"
-                name="price"
-                id="price"
-                required
-                min="0"
-                step="0.01"
-                value={formData.price}
-                onChange={handleChange}
-                className="mt-1 block w-full pl-7 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
-            </div>
+    <Card className="w-full max-w-2xl mx-auto">
+      <CardHeader>
+        <CardTitle>{initialData ? 'Edit Item' : 'Create New Item'}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Name</Label>
+            <Input
+              id="name"
+              {...register('name', { required: 'Name is required' })}
+              placeholder="Item name"
+              className={errors.name ? 'border-red-500' : ''}
+            />
+            {errors.name && (
+              <p className="text-sm text-red-500">{errors.name.message as string}</p>
+            )}
           </div>
 
-          <div>
-            <label htmlFor="quantity" className="block text-sm font-medium text-gray-700">
-              Quantity in Stock
-            </label>
-            <input
-              type="number"
-              name="quantity"
-              id="quantity"
-              required
-              min="0"
-              value={formData.quantity}
-              onChange={handleChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          <div className="space-y-2">
+            <Label htmlFor="catalogueId">Catalogue ID</Label>
+            <Input
+              id="catalogueId"
+              {...register('catalogueId', { required: 'Catalogue ID is required' })}
+              placeholder="Catalogue ID"
+              className={errors.catalogueId ? 'border-red-500' : ''}
+            />
+            {errors.catalogueId && (
+              <p className="text-sm text-red-500">{errors.catalogueId.message as string}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="sku">SKU</Label>
+            <Input
+              id="sku"
+              {...register('sku', { required: 'SKU is required' })}
+              placeholder="SKU"
+              className={errors.sku ? 'border-red-500' : ''}
+            />
+            {errors.sku && (
+              <p className="text-sm text-red-500">{errors.sku.message as string}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="packSize">Pack Size</Label>
+            <Input
+              id="packSize"
+              {...register('packSize', { required: 'Pack Size is required' })}
+              placeholder="Pack Size"
+              className={errors.packSize ? 'border-red-500' : ''}
+            />
+            {errors.packSize && (
+              <p className="text-sm text-red-500">{errors.packSize.message as string}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="hsnCode">HSN Code</Label>
+            <Input
+              id="hsnCode"
+              {...register('hsnCode', { required: 'HSN Code is required' })}
+              placeholder="HSN Code"
+              className={errors.hsnCode ? 'border-red-500' : ''}
+            />
+            {errors.hsnCode && (
+              <p className="text-sm text-red-500">{errors.hsnCode.message as string}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="batchNo">Batch Number</Label>
+            <Input
+              id="batchNo"
+              {...register('batchNo', { required: 'Batch Number is required' })}
+              placeholder="Batch Number"
+              className={errors.batchNo ? 'border-red-500' : ''}
+            />
+            {errors.batchNo && (
+              <p className="text-sm text-red-500">{errors.batchNo.message as string}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="mfgDate">Manufacturing Date</Label>
+            <Input
+              id="mfgDate"
+              type="date"
+              {...register('mfgDate')}
+              placeholder="Manufacturing Date"
             />
           </div>
-        </div>
-      </div>
-      <div className="sticky bottom-0 bg-white pt-4 border-t mt-4">
-        <div className="flex justify-end space-x-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            {initialData ? 'Update Item' : 'Create Item'}
-          </button>
-        </div>
-      </div>
-    </form>
+
+          <div className="space-y-2">
+            <Label htmlFor="expDate">Expiry Date</Label>
+            <Input
+              id="expDate"
+              type="date"
+              {...register('expDate')}
+              placeholder="Expiry Date"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="brand">Brand</Label>
+            <Input
+              id="brand"
+              {...register('brand', { required: 'Brand is required' })}
+              placeholder="Brand"
+              className={errors.brand ? 'border-red-500' : ''}
+            />
+            {errors.brand && (
+              <p className="text-sm text-red-500">{errors.brand.message as string}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="price">Price</Label>
+            <Input
+              id="price"
+              type="number"
+              {...register('price', { 
+                required: 'Price is required',
+                min: { value: 0, message: 'Price must be positive' }
+              })}
+              placeholder="Item price"
+              className={errors.price ? 'border-red-500' : ''}
+            />
+            {errors.price && (
+              <p className="text-sm text-red-500">{errors.price.message as string}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="quantity">Quantity</Label>
+            <Input
+              id="quantity"
+              type="number"
+              {...register('quantity', { 
+                required: 'Quantity is required',
+                min: { value: 0, message: 'Quantity must be positive' }
+              })}
+              placeholder="Item quantity"
+              className={errors.quantity ? 'border-red-500' : ''}
+            />
+            {errors.quantity && (
+              <p className="text-sm text-red-500">{errors.quantity.message as string}</p>
+            )}
+          </div>
+
+          <div className="pt-4">
+            <Button type="submit" className="w-full">
+              {initialData ? 'Update Item' : 'Create Item'}
+            </Button>
+            <Button type="button" onClick={onCancel} className="w-full mt-2">
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
