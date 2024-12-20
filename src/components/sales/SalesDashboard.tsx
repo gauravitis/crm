@@ -1,10 +1,10 @@
 import React from 'react';
-import { useSalesStats } from '../../hooks/useSalesStats';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useCombinedSalesStats } from '../../hooks/useCombinedSalesStats';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { ArrowUpRight, ArrowDownRight, Loader } from 'lucide-react';
 
 export default function SalesDashboard() {
-  const { stats, loading, error } = useSalesStats();
+  const { stats, loading, error } = useCombinedSalesStats();
 
   if (loading) {
     return (
@@ -22,25 +22,28 @@ export default function SalesDashboard() {
     );
   }
 
-  const monthOverMonthGrowth = ((stats.thisMonth - stats.lastMonth) / stats.lastMonth) * 100;
+  const monthOverMonthGrowth = ((stats.thisMonth.total - stats.lastMonth.total) / stats.lastMonth.total) * 100;
 
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Today's Sales */}
+        {/* Today's Combined */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-sm font-medium text-gray-500">Today's Sales</h3>
+          <h3 className="text-sm font-medium text-gray-500">Today's Total</h3>
           <p className="mt-2 text-3xl font-semibold text-gray-900">
-            ₹{stats.today.toLocaleString('en-IN')}
+            ₹{stats.today.total.toLocaleString('en-IN')}
           </p>
+          <div className="mt-2 text-sm text-gray-500">
+            Includes ₹{stats.today.approvedQuotations.toLocaleString('en-IN')} from approved quotations
+          </div>
         </div>
 
-        {/* This Month's Sales */}
+        {/* This Month's Combined */}
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-sm font-medium text-gray-500">This Month</h3>
           <p className="mt-2 text-3xl font-semibold text-gray-900">
-            ₹{stats.thisMonth.toLocaleString('en-IN')}
+            ₹{stats.thisMonth.total.toLocaleString('en-IN')}
           </p>
           <div className="mt-2 flex items-center">
             <span className={`text-sm ${monthOverMonthGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -53,28 +56,37 @@ export default function SalesDashboard() {
             </span>
             <span className="text-sm text-gray-500 ml-2">vs last month</span>
           </div>
+          <div className="mt-2 text-sm text-gray-500">
+            Includes ₹{stats.thisMonth.approvedQuotations.toLocaleString('en-IN')} from approved quotations
+          </div>
         </div>
 
-        {/* Last Month's Sales */}
+        {/* Last Month's Combined */}
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-sm font-medium text-gray-500">Last Month</h3>
           <p className="mt-2 text-3xl font-semibold text-gray-900">
-            ₹{stats.lastMonth.toLocaleString('en-IN')}
+            ₹{stats.lastMonth.total.toLocaleString('en-IN')}
           </p>
+          <div className="mt-2 text-sm text-gray-500">
+            Includes ₹{stats.lastMonth.approvedQuotations.toLocaleString('en-IN')} from approved quotations
+          </div>
         </div>
 
-        {/* This Year's Sales */}
+        {/* This Year's Combined */}
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-sm font-medium text-gray-500">This Year</h3>
           <p className="mt-2 text-3xl font-semibold text-gray-900">
-            ₹{stats.thisYear.toLocaleString('en-IN')}
+            ₹{stats.thisYear.total.toLocaleString('en-IN')}
           </p>
+          <div className="mt-2 text-sm text-gray-500">
+            Includes ₹{stats.thisYear.approvedQuotations.toLocaleString('en-IN')} from approved quotations
+          </div>
         </div>
       </div>
 
-      {/* Sales Chart */}
+      {/* Combined Chart */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Monthly Sales Trend</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Monthly Revenue Trend</h3>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={stats.monthlyData}>
@@ -84,9 +96,11 @@ export default function SalesDashboard() {
                 tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}K`}
               />
               <Tooltip 
-                formatter={(value: number) => [`₹${value.toLocaleString('en-IN')}`, 'Sales']}
+                formatter={(value: number) => [`₹${value.toLocaleString('en-IN')}`, 'Amount']}
               />
-              <Bar dataKey="amount" fill="#3B82F6" />
+              <Legend />
+              <Bar dataKey="sales" name="Sales" fill="#3B82F6" />
+              <Bar dataKey="approvedQuotations" name="Approved Quotations" fill="#10B981" />
             </BarChart>
           </ResponsiveContainer>
         </div>

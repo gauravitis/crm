@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { QuotationData, QuotationProduct } from '../types/quotation-generator';
 import { format } from 'date-fns';
 import { generateWord } from '../utils/documentGenerator';
-import { FileText, FileType, Plus, Trash2 } from 'lucide-react';
+import { FileText, FileType, Plus, Trash2, Save } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useQuotations } from '../hooks/useQuotations';
 
 const STORAGE_KEY = 'quotationData';
 
@@ -77,6 +78,7 @@ export default function QuotationGenerator() {
     ...defaultQuotationData,
     quotationRef: generateReferenceNumber(),
   });
+  const { addQuotation } = useQuotations();
 
   useEffect(() => {
     const savedData = localStorage.getItem(STORAGE_KEY);
@@ -175,6 +177,34 @@ export default function QuotationGenerator() {
     }
   };
 
+  const handleSaveQuotation = () => {
+    const total = quotationData.items.reduce((sum, item) => {
+      const itemTotal = calculateItemTotal(item);
+      return sum + itemTotal;
+    }, 0);
+
+    const quotationToSave = {
+      id: generateReferenceNumber(), // Add unique ID
+      clientId: quotationData.billTo.name, // Using name as ID for now
+      items: quotationData.items.map(item => ({
+        description: item.product_description,
+        quantity: item.qty,
+        price: item.unit_rate,
+        discount: item.discount_percent,
+        gst: item.gst_percent,
+        total: calculateItemTotal(item)
+      })),
+      total: total,
+      status: 'draft' as const,
+      createdAt: new Date(),
+      validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+    };
+    
+    console.log('Saving quotation:', quotationToSave); // Add debug log
+    addQuotation(quotationToSave);
+    toast.success('Quotation saved successfully!');
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <ToastContainer />
@@ -187,6 +217,13 @@ export default function QuotationGenerator() {
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 inline-flex items-center"
             >
               Generate Word
+            </button>
+            <button
+              onClick={handleSaveQuotation}
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 inline-flex items-center"
+            >
+              <Save className="h-5 w-5 mr-2" />
+              Save Quotation
             </button>
             <button
               onClick={clearData}
