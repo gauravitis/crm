@@ -12,7 +12,6 @@ export function useQuotations() {
     if (savedQuotations) {
       try {
         const parsed = JSON.parse(savedQuotations);
-        // Convert date strings back to Date objects and add client names
         return parsed.map((q: Quotation) => {
           const client = clients.find(c => c.id === q.clientId);
           return {
@@ -48,40 +47,25 @@ export function useQuotations() {
     localStorage.setItem(QUOTATIONS_STORAGE_KEY, JSON.stringify(quotations));
   }, [quotations]);
 
-  const calculateTotal = (items: QuotationItem[]) => {
-    return items.reduce((sum, item) => sum + item.total, 0);
-  };
-
-  const addQuotation = useCallback((data: Omit<Quotation, 'id' | 'createdAt' | 'total' | 'clientName'>) => {
-    const client = clients.find(c => c.id === data.clientId);
+  const addQuotation = useCallback((data: Omit<Quotation, 'id'>) => {
     const newQuotation: Quotation = {
       ...data,
       id: generateId(),
       createdAt: new Date(),
-      validUntil: new Date(data.validUntil),
-      total: calculateTotal(data.items),
-      clientName: client?.name || 'Unknown Client'
+      status: data.status || 'draft'
     };
     setQuotations(prev => [...prev, newQuotation]);
-    return newQuotation;
-  }, [clients]);
+  }, []);
 
   const updateQuotation = useCallback((id: string, data: Partial<Quotation>) => {
-    setQuotations(prev => prev.map(quotation => {
-      if (quotation.id === id) {
-        const client = clients.find(c => c.id === (data.clientId || quotation.clientId));
-        const updatedQuotation = {
-          ...quotation,
-          ...data,
-          clientName: client?.name || 'Unknown Client',
-          validUntil: new Date(data.validUntil || quotation.validUntil),
-          total: calculateTotal(data.items || quotation.items)
-        };
-        return updatedQuotation;
-      }
-      return quotation;
-    }));
-  }, [clients]);
+    setQuotations(prev => 
+      prev.map(quotation => 
+        quotation.id === id
+          ? { ...quotation, ...data }
+          : quotation
+      )
+    );
+  }, []);
 
   const deleteQuotation = useCallback((id: string) => {
     setQuotations(prev => prev.filter(quotation => quotation.id !== id));

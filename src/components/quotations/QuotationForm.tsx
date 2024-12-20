@@ -32,6 +32,39 @@ export default function QuotationForm({ onSubmit, initialData }: QuotationFormPr
     return afterDiscount + gstAmount;
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const selectedClient = clients.find(c => c.id === clientId);
+    
+    const quotationData = {
+      clientId,
+      clientName: selectedClient?.name || 'Unknown Client',
+      status,
+      validUntil: new Date(validUntil),
+      items: quotationItems,
+      total: quotationItems.reduce((sum, item) => sum + item.total, 0),
+      createdAt: new Date(),
+    };
+
+    onSubmit(quotationData);
+  };
+
+  const handleSaveQuotation = () => {
+    const selectedClient = clients.find(c => c.id === clientId);
+    
+    const quotationData = {
+      clientId,
+      clientName: selectedClient?.name || 'Unknown Client',
+      status,
+      validUntil: new Date(validUntil),
+      items: quotationItems,
+      total: quotationItems.reduce((sum, item) => sum + item.total, 0),
+      createdAt: new Date(),
+    };
+
+    onSubmit(quotationData);
+  };
+
   const handleItemChange = (index: number, field: keyof QuotationItem, value: any) => {
     const newItems = [...quotationItems];
     newItems[index] = {
@@ -52,16 +85,6 @@ export default function QuotationForm({ onSubmit, initialData }: QuotationFormPr
 
   const handleRemoveItem = (index: number) => {
     setQuotationItems(quotationItems.filter((_, i) => i !== index));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit({
-      clientId,
-      status,
-      validUntil: new Date(validUntil),
-      items: quotationItems,
-    });
   };
 
   const handleDescriptionChange = (index: number, value: string) => {
@@ -98,7 +121,7 @@ export default function QuotationForm({ onSubmit, initialData }: QuotationFormPr
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-6">
       <div>
         <label className="block text-sm font-medium text-gray-700">Client</label>
         <select
@@ -266,12 +289,32 @@ export default function QuotationForm({ onSubmit, initialData }: QuotationFormPr
         Total: ₹{quotationItems.reduce((sum, item) => sum + item.total, 0).toFixed(2)}
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end space-x-4 mt-6">
         <button
-          type="submit"
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          type="button"
+          onClick={() => {
+            setClientId('');
+            setQuotationItems([{ description: '', quantity: 1, price: 0, discount: 0, gst: 18, total: 0 }]);
+          }}
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          Clear Data
+        </button>
+        <button
+          type="button"
+          onClick={handleSaveQuotation}
+          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
           Save Quotation
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            // Generate Word functionality
+          }}
+          className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+        >
+          Generate Word
         </button>
       </div>
     </form>
