@@ -6,6 +6,8 @@ import { FileText, FileType, Plus, Trash2, Save } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useQuotations } from '../hooks/useQuotations';
+import { useClients } from '../hooks/useClients';
+import { useItems } from '../hooks/useItems';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -106,25 +108,28 @@ const formatDateForDisplay = (dateStr: string) => {
 };
 
 export default function QuotationGenerator() {
-  const [quotationData, setQuotationData] = useState<QuotationData>({
-    ...defaultQuotationData,
-    quotationRef: generateReferenceNumber(),
-  });
   const { addQuotation } = useQuotations();
-
-  useEffect(() => {
-    const savedData = localStorage.getItem(STORAGE_KEY);
-    if (savedData) {
-      setQuotationData(JSON.parse(savedData));
-    } else {
-      // Only generate new reference number if there's no saved data
-      setQuotationData(prev => ({
+  const { clients } = useClients();
+  const { items } = useItems();
+  const [quotationData, setQuotationData] = useState<QuotationData>(
+    () => {
+      const savedData = localStorage.getItem(STORAGE_KEY);
+      if (savedData) {
+        return JSON.parse(savedData);
+      }
+      return {
         ...defaultQuotationData,
         quotationRef: generateReferenceNumber(),
-      }));
+      };
     }
-  }, []);
+  );
+  const [clientSuggestions, setClientSuggestions] = useState<any[]>([]);
+  const [itemSuggestions, setItemSuggestions] = useState<any[]>([]);
+  const [showClientSuggestions, setShowClientSuggestions] = useState(false);
+  const [showItemSuggestions, setShowItemSuggestions] = useState(false);
+  const [focusedItemIndex, setFocusedItemIndex] = useState<number | null>(null);
 
+  // Save to localStorage whenever quotationData changes
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(quotationData));
   }, [quotationData]);
@@ -241,6 +246,97 @@ export default function QuotationGenerator() {
     }
   };
 
+  const handleClientNameChange = (value: string) => {
+    // Update the quotation data
+    setQuotationData(prev => ({
+      ...prev,
+      billTo: {
+        ...prev.billTo,
+        name: value
+      }
+    }));
+
+    // Filter and show client suggestions
+    if (value.trim()) {
+      const filteredClients = clients.filter(client => 
+        client.name.toLowerCase().includes(value.toLowerCase()) ||
+        client.company?.toLowerCase().includes(value.toLowerCase())
+      );
+      setClientSuggestions(filteredClients);
+      setShowClientSuggestions(true);
+    } else {
+      setClientSuggestions([]);
+      setShowClientSuggestions(false);
+    }
+  };
+
+  const handleClientSelect = (client: any) => {
+    // Check if address is a string or an object
+    let formattedAddress = '';
+    if (typeof client.address === 'string') {
+      formattedAddress = client.address;
+    } else if (client.address) {
+      formattedAddress = [
+        client.address.street,
+        client.address.city,
+        client.address.state,
+        client.address.postalCode,
+        client.address.country
+      ].filter(Boolean).join(', ');
+    }
+
+    setQuotationData(prev => ({
+      ...prev,
+      billTo: {
+        name: client.name || '',
+        company: client.company || '',
+        address: formattedAddress,
+        phone: client.phone || '',
+        email: client.email || ''
+      }
+    }));
+    setShowClientSuggestions(false);
+  };
+
+  const handleItemSearch = (index: number, value: string) => {
+    if (!value.trim()) {
+      setItemSuggestions([]);
+      setShowItemSuggestions(false);
+      return;
+    }
+
+    const searchValue = value.toLowerCase();
+    const filteredItems = items.filter(item => 
+      item.catalogueId?.toLowerCase().includes(searchValue) ||
+      item.name?.toLowerCase().includes(searchValue)
+    );
+    
+    setItemSuggestions(filteredItems);
+    setShowItemSuggestions(true);
+    setFocusedItemIndex(index);
+  };
+
+  const handleItemSelect = (index: number, item: any) => {
+    const updatedItems = [...quotationData.items];
+    updatedItems[index] = {
+      ...updatedItems[index],
+      cat_no: item.catalogueId || '',
+      pack_size: item.packSize || '',
+      product_description: item.name || '',
+      unit_rate: item.price || 0,
+      make: item.brand || '',
+      lead_time: '1-2 weeks'
+    };
+
+    setQuotationData(prev => ({
+      ...prev,
+      items: updatedItems
+    }));
+    setShowItemSuggestions(false);
+    calculateItemTotal(updatedItems[index]);
+    updateTotals(updatedItems);
+  };
+
   return (
     <div className="p-6 max-w-[95vw] mx-auto">
       <ToastContainer />
@@ -281,16 +377,31 @@ export default function QuotationGenerator() {
           </CardHeader>
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
+              <div className="space-y-2 relative">
                 <Label className="text-sm font-medium">Name</Label>
                 <Input
                   type="text"
                   value={quotationData.billTo.name}
-                  onChange={(e) => setQuotationData(prev => ({
-                    ...prev,
-                    billTo: { ...prev.billTo, name: e.target.value }
-                  }))}
+                  onChange={(e) => handleClientNameChange(e.target.value)}
+                  placeholder="Start typing client name..."
+                  className="w-full"
                 />
+                {showClientSuggestions && clientSuggestions.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                    {clientSuggestions.map((client, index) => (
+                      <div
+                        key={index}
+                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                        onClick={() => handleClientSelect(client)}
+                      >
+                        <div className="font-medium">{client.name}</div>
+                        {client.company && (
+                          <div className="text-sm text-gray-600">{client.company}</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Address</Label>
@@ -411,13 +522,31 @@ export default function QuotationGenerator() {
                   {quotationData.items.map((item, index) => (
                     <TableRow key={index} className="hover:bg-gray-50">
                       <TableCell className="text-center font-medium">{item.sno}</TableCell>
-                      <TableCell>
+                      <TableCell className="relative">
                         <Input
                           type="text"
                           value={item.cat_no}
-                          onChange={(e) => handleItemChange(index, 'cat_no', e.target.value)}
-                          className="text-base"
+                          onChange={(e) => {
+                            handleItemSearch(index, e.target.value);
+                            handleItemChange(index, 'cat_no', e.target.value);
+                          }}
+                          placeholder="Enter catalog number"
+                          className="w-full"
                         />
+                        {showItemSuggestions && itemSuggestions.length > 0 && index === focusedItemIndex && (
+                          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                            {itemSuggestions.map((suggestion, idx) => (
+                              <div
+                                key={idx}
+                                className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                                onClick={() => handleItemSelect(index, suggestion)}
+                              >
+                                <div className="font-medium">{suggestion.catalogueId}</div>
+                                <div className="text-sm text-gray-600">{suggestion.name}</div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Input
