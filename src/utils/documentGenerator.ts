@@ -1,4 +1,25 @@
-import { Document, Paragraph, Table, TableRow, TableCell, TextRun, AlignmentType, BorderStyle, WidthType } from 'docx';
+import { 
+  Document, 
+  Paragraph, 
+  Table, 
+  TableRow, 
+  TableCell, 
+  TextRun, 
+  AlignmentType, 
+  BorderStyle, 
+  WidthType,
+  HeightRule,
+  PageNumber,
+  Header,
+  Footer,
+  ShadingType,
+  PageOrientation,
+  PageNumberFormat,
+  convertInchesToTwip,
+  LevelFormat,
+  NumberFormat,
+  ITableCellMarginOptions
+} from 'docx';
 import { saveAs } from "file-saver";
 import { QuotationData } from '../types/quotation-generator';
 import { format, parse } from "date-fns";
@@ -11,125 +32,357 @@ const formatCurrency = (amount: number | string): string => {
 
 const formatDate = (dateStr: string): string => {
   try {
-    // First try parsing as dd/MM/yyyy
     const date = parse(dateStr, 'dd/MM/yyyy', new Date());
     return format(date, 'dd/MM/yyyy');
   } catch {
     try {
-      // If that fails, try parsing as ISO string
       const date = new Date(dateStr);
       return format(date, 'dd/MM/yyyy');
     } catch {
-      // If all parsing fails, return the original string
       return dateStr;
     }
   }
 };
 
+// Common styles
+const STYLES = {
+  fonts: {
+    header: { name: 'Arial', size: 28 },
+    subHeader: { name: 'Arial', size: 24 },
+    normal: { name: 'Arial', size: 22 },
+    small: { name: 'Arial', size: 20 }
+  },
+  colors: {
+    primary: '2E5A88',
+    secondary: '4A90E2',
+    accent: 'F5F5F5',
+    border: '000000'
+  },
+  spacing: {
+    normal: 300,
+    large: 400
+  },
+  borders: {
+    default: {
+      top: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
+      bottom: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
+      left: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
+      right: { style: BorderStyle.SINGLE, size: 1, color: '000000' }
+    }
+  },
+  cellMargin: {
+    top: convertInchesToTwip(0.1),
+    bottom: convertInchesToTwip(0.1),
+    left: convertInchesToTwip(0.1),
+    right: convertInchesToTwip(0.1)
+  } as ITableCellMarginOptions
+};
+
+// Helper function to create bordered paragraph
+const createBorderedParagraph = (text: string | TextRun[], options: any = {}) => {
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: STYLES.borders.default,
+    rows: [
+      new TableRow({
+        children: [
+          new TableCell({
+            borders: STYLES.borders.default,
+            children: [
+              new Paragraph({
+                children: typeof text === 'string' 
+                  ? [new TextRun({ text, ...STYLES.fonts.normal, ...options })]
+                  : text,
+                spacing: { before: STYLES.spacing.normal, after: STYLES.spacing.normal }
+              })
+            ]
+          })
+        ]
+      })
+    ]
+  });
+};
+
 export const generateWord = async (data: QuotationData) => {
-  console.log('Quotation Date:', data.quotationDate);
-  console.log('Valid Till:', data.validTill);
   const doc = new Document({
     sections: [{
-      properties: {},
+      properties: {
+        page: {
+          margin: {
+            top: convertInchesToTwip(1),
+            right: convertInchesToTwip(1),
+            bottom: convertInchesToTwip(1),
+            left: convertInchesToTwip(1),
+          },
+          orientation: PageOrientation.PORTRAIT
+        }
+      },
+      headers: {
+        default: new Header({
+          children: [
+            new Paragraph({
+              alignment: AlignmentType.RIGHT,
+              children: [
+                new TextRun({
+                  text: "Page ",
+                  ...STYLES.fonts.small
+                }),
+                new TextRun({
+                  children: [PageNumber.CURRENT],
+                  ...STYLES.fonts.small
+                }),
+                new TextRun({
+                  text: " of ",
+                  ...STYLES.fonts.small
+                }),
+                new TextRun({
+                  children: [PageNumber.TOTAL_PAGES],
+                  ...STYLES.fonts.small
+                })
+              ]
+            })
+          ]
+        })
+      },
+      footers: {
+        default: new Footer({
+          children: [
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              children: [
+                new TextRun({
+                  text: `${data.billFrom.name} - ${data.billFrom.address}`,
+                  ...STYLES.fonts.small
+                })
+              ]
+            }),
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              children: [
+                new TextRun({
+                  text: `Tel: ${data.billFrom.phone} | Email: ${data.billFrom.email}`,
+                  ...STYLES.fonts.small
+                })
+              ]
+            })
+          ]
+        })
+      },
       children: [
-        // Company Header
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          children: [
-            new TextRun({ text: data.billFrom.name, bold: true, size: 28 }),
-          ],
-        }),
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          children: [
-            new TextRun({ text: data.billFrom.address, size: 24 }),
-          ],
-        }),
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          children: [
-            new TextRun({ text: `Email: ${data.billFrom.email} Tel: ${data.billFrom.phone}`, size: 24 }),
-          ],
-        }),
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          children: [
-            new TextRun({ text: `PAN No. ${data.billFrom.pan}; GST No. ${data.billFrom.gst}`, size: 24 }),
-          ],
+        // Company Header with background
+        new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          borders: STYLES.borders.default,
+          rows: [
+            new TableRow({
+              children: [
+                new TableCell({
+                  shading: {
+                    fill: STYLES.colors.primary,
+                    type: ShadingType.CLEAR,
+                    color: "auto"
+                  },
+                  children: [
+                    new Paragraph({
+                      alignment: AlignmentType.CENTER,
+                      spacing: { before: STYLES.spacing.large, after: STYLES.spacing.normal },
+                      children: [
+                        new TextRun({ 
+                          text: data.billFrom.name,
+                          bold: true,
+                          color: "FFFFFF",
+                          ...STYLES.fonts.header
+                        })
+                      ]
+                    }),
+                    new Paragraph({
+                      alignment: AlignmentType.CENTER,
+                      spacing: { before: STYLES.spacing.normal, after: STYLES.spacing.large },
+                      children: [
+                        new TextRun({ 
+                          text: `PAN: ${data.billFrom.pan} | GST: ${data.billFrom.gst}`,
+                          color: "FFFFFF",
+                          ...STYLES.fonts.subHeader
+                        })
+                      ]
+                    })
+                  ]
+                })
+              ]
+            })
+          ]
         }),
         new Paragraph({ text: '' }),
 
         // Quotation Title
         new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { before: STYLES.spacing.large, after: STYLES.spacing.large },
           children: [
-            new TextRun({ text: 'Quotation', bold: true, size: 28 }),
-          ],
-        }),
-        new Paragraph({ text: '' }),
-
-        // Client Details
-        new Paragraph({
-          children: [
-            new TextRun({ text: 'To:', size: 24 }),
-          ],
-        }),
-        new Paragraph({
-          children: [
-            new TextRun({ text: data.billTo.name, size: 24 }),
-          ],
-        }),
-        new Paragraph({
-          children: [
-            new TextRun({ text: data.billTo.address, size: 24 }),
-          ],
-        }),
-        new Paragraph({
-          children: [
-            new TextRun({ text: `Tel. No.: ${data.billTo.phone}`, size: 24 }),
-          ],
-        }),
-        new Paragraph({
-          children: [
-            new TextRun({ text: `Email: ${data.billTo.email}`, size: 24 }),
-          ],
-        }),
-        new Paragraph({ text: '' }),
-
-        // Quotation Details
-        new Paragraph({
-          children: [
-            new TextRun({ text: `Ref No: ${data.quotationRef}`, size: 24 }),
             new TextRun({ 
-              text: `\tDate: ${formatDate(data.quotationDate)}`, 
-              size: 24 
+              text: 'QUOTATION',
+              bold: true,
+              ...STYLES.fonts.header
+            })
+          ]
+        }),
+
+        // Reference and Date
+        new Paragraph({
+          children: [
+            new TextRun({ 
+              text: `Ref No: ${data.quotationRef}`,
+              ...STYLES.fonts.normal
             }),
-          ],
+            new TextRun({ 
+              text: `\tDate: ${formatDate(data.quotationDate)}`,
+              ...STYLES.fonts.normal
+            })
+          ]
         }),
         new Paragraph({ text: '' }),
 
-        // Items Table
+        // Client Details Box
         new Table({
-          width: {
-            size: 100,
-            type: WidthType.PERCENTAGE,
-          },
-          borders: {
-            top: { style: BorderStyle.SINGLE, size: 1 },
-            bottom: { style: BorderStyle.SINGLE, size: 1 },
-            left: { style: BorderStyle.SINGLE, size: 1 },
-            right: { style: BorderStyle.SINGLE, size: 1 },
-          },
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          borders: STYLES.borders.default,
           rows: [
             new TableRow({
               children: [
+                new TableCell({
+                  children: [
+                    new Paragraph({
+                      children: [
+                        new TextRun({ 
+                          text: 'To:',
+                          bold: true,
+                          ...STYLES.fonts.normal
+                        })
+                      ]
+                    }),
+                    new Paragraph({
+                      children: [
+                        new TextRun({ 
+                          text: data.billTo.name,
+                          ...STYLES.fonts.normal
+                        })
+                      ]
+                    }),
+                    new Paragraph({
+                      children: [
+                        new TextRun({ 
+                          text: data.billTo.address,
+                          ...STYLES.fonts.normal
+                        })
+                      ]
+                    }),
+                    new Paragraph({
+                      children: [
+                        new TextRun({ 
+                          text: `Kind Attn: ${data.billTo.name}`,
+                          ...STYLES.fonts.normal
+                        })
+                      ]
+                    }),
+                    new Paragraph({
+                      children: [
+                        new TextRun({ 
+                          text: `Tel: ${data.billTo.phone} | Email: ${data.billTo.email}`,
+                          ...STYLES.fonts.normal
+                        })
+                      ]
+                    })
+                  ]
+                })
+              ]
+            })
+          ]
+        }),
+        new Paragraph({ text: '' }),
+
+        // Items Table with alternating colors
+        new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          borders: STYLES.borders.default,
+          cellMargin: STYLES.cellMargin,
+          rows: [
+            // Header row
+            new TableRow({
+              tableHeader: true,
+              children: [
                 'S.No', 'Cat No.', 'Pack Size', 'Description', 'Qty', 'Unit Rate',
-                'Discount %', 'Discount Value', 'GST %', 'GST Value', 'Total', 'Lead Time', 'Make',
-              ].map(header => new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: header, bold: true, size: 24 })] })],
-              })),
+                'Discount %', 'Discount Value', 'GST %', 'GST Value', 'Total', 'Lead Time', 'Make'
+              ].map((header, index) => {
+                // Define column widths based on content type
+                let columnWidth = 8; // default width
+                switch(header) {
+                  case 'Description':
+                    columnWidth = 20;
+                    break;
+                  case 'S.No':
+                    columnWidth = 5;
+                    break;
+                  case 'Cat No.':
+                  case 'Pack Size':
+                    columnWidth = 8;
+                    break;
+                  case 'Qty':
+                  case 'GST %':
+                  case 'Discount %':
+                    columnWidth = 6;
+                    break;
+                  case 'Unit Rate':
+                  case 'Discount Value':
+                  case 'GST Value':
+                    columnWidth = 9;
+                    break;
+                  case 'Total':
+                    columnWidth = 7;
+                    break;
+                  case 'Lead Time':
+                  case 'Make':
+                    columnWidth = 8;
+                    break;
+                }
+
+                // Determine text alignment based on column content
+                const shouldCenter = [
+                  'S.No', 'Cat No.', 'Pack Size', 'Qty', 
+                  'Discount %', 'Discount Value', 'GST %', 'GST Value', 'Total'
+                ].includes(header);
+
+                return new TableCell({
+                  shading: {
+                    fill: STYLES.colors.primary,
+                    type: ShadingType.CLEAR,
+                    color: "auto"
+                  },
+                  width: {
+                    size: columnWidth,
+                    type: WidthType.PERCENTAGE
+                  },
+                  children: [
+                    new Paragraph({
+                      alignment: shouldCenter 
+                        ? AlignmentType.CENTER 
+                        : ['Unit Rate'].includes(header)
+                          ? AlignmentType.RIGHT
+                          : AlignmentType.LEFT,
+                      children: [
+                        new TextRun({ 
+                          text: header,
+                          bold: true,
+                          color: "FFFFFF",
+                          ...STYLES.fonts.normal
+                        })
+                      ]
+                    })
+                  ]
+                });
+              })
             }),
-            ...data.items.map(item => new TableRow({
+            // Data rows
+            ...data.items.map((item, index) => new TableRow({
               children: [
                 item.sno.toString(),
                 item.cat_no,
@@ -143,110 +396,189 @@ export const generateWord = async (data: QuotationData) => {
                 formatCurrency(item.gst_value),
                 formatCurrency(item.total_price),
                 item.lead_time,
-                item.make,
-              ].map(text => new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text, size: 24 })] })],
-              })),
-            })),
-          ],
+                item.make
+              ].map((text, colIndex) => {
+                // Determine if this column should be centered
+                const shouldCenter = [0, 1, 2, 4, 6, 7, 8, 9, 10].includes(colIndex);
+                
+                return new TableCell({
+                  shading: {
+                    fill: index % 2 === 0 ? STYLES.colors.accent : "FFFFFF",
+                    type: ShadingType.CLEAR,
+                    color: "auto"
+                  },
+                  width: {
+                    size: colIndex === 3 ? 20 : 
+                          colIndex === 0 ? 5 :
+                          [4, 8, 6].includes(colIndex) ? 6 :
+                          [5, 7, 9].includes(colIndex) ? 9 :
+                          colIndex === 10 ? 7 : 8,
+                    type: WidthType.PERCENTAGE
+                  },
+                  verticalAlign: "center",
+                  children: [
+                    new Paragraph({
+                      alignment: shouldCenter
+                        ? AlignmentType.CENTER
+                        : [5].includes(colIndex)
+                          ? AlignmentType.RIGHT
+                          : AlignmentType.LEFT,
+                      children: [
+                        new TextRun({ 
+                          text,
+                          ...STYLES.fonts.normal
+                        })
+                      ]
+                    })
+                  ]
+                });
+              })
+            }))
+          ]
         }),
         new Paragraph({ text: '' }),
 
         // Totals
-        new Paragraph({
+        new Table({
+          width: { size: 40, type: WidthType.PERCENTAGE },
           alignment: AlignmentType.RIGHT,
-          children: [
-            new TextRun({ text: `Sub Total: ${formatCurrency(data.subTotal)}`, size: 24 }),
-          ],
-        }),
-        new Paragraph({
-          alignment: AlignmentType.RIGHT,
-          children: [
-            new TextRun({ text: `Total GST: ${formatCurrency(data.tax)}`, size: 24 }),
-          ],
-        }),
-        new Paragraph({
-          alignment: AlignmentType.RIGHT,
-          children: [
-            new TextRun({ text: `Grand Total: ${formatCurrency(data.grandTotal)}`, bold: true, size: 24 }),
-          ],
+          borders: STYLES.borders.default,
+          rows: [
+            new TableRow({
+              children: [
+                new TableCell({
+                  children: [new Paragraph({ 
+                    children: [new TextRun({ text: 'Sub Total:', ...STYLES.fonts.normal })]
+                  })]
+                }),
+                new TableCell({
+                  children: [new Paragraph({ 
+                    alignment: AlignmentType.RIGHT,
+                    children: [new TextRun({ text: formatCurrency(data.subTotal), ...STYLES.fonts.normal })]
+                  })]
+                })
+              ]
+            }),
+            new TableRow({
+              children: [
+                new TableCell({
+                  children: [new Paragraph({ 
+                    children: [new TextRun({ text: 'Total GST:', ...STYLES.fonts.normal })]
+                  })]
+                }),
+                new TableCell({
+                  children: [new Paragraph({ 
+                    alignment: AlignmentType.RIGHT,
+                    children: [new TextRun({ text: formatCurrency(data.tax), ...STYLES.fonts.normal })]
+                  })]
+                })
+              ]
+            }),
+            new TableRow({
+              children: [
+                new TableCell({
+                  children: [new Paragraph({ 
+                    children: [new TextRun({ text: 'Grand Total:', bold: true, ...STYLES.fonts.normal })]
+                  })]
+                }),
+                new TableCell({
+                  children: [new Paragraph({ 
+                    alignment: AlignmentType.RIGHT,
+                    children: [new TextRun({ text: formatCurrency(data.grandTotal), bold: true, ...STYLES.fonts.normal })]
+                  })]
+                })
+              ]
+            })
+          ]
         }),
         new Paragraph({ text: '' }),
 
         // Bank Details
-        new Paragraph({
-          children: [
-            new TextRun({ text: data.bankDetails.bankName, size: 24 }),
-          ],
-        }),
-        new Paragraph({
-          children: [
-            new TextRun({ text: `Account No: ${data.bankDetails.accountNo}; NEFT/RTGS IFSC: ${data.bankDetails.ifscCode}`, size: 24 }),
-          ],
-        }),
-        new Paragraph({
-          children: [
-            new TextRun({ text: `Branch code: ${data.bankDetails.branchCode}; Micro code: ${data.bankDetails.microCode}; Account type: ${data.bankDetails.accountType}`, size: 24 }),
-          ],
-        }),
+        createBorderedParagraph([
+          new TextRun({ text: 'Bank Details\n', bold: true, ...STYLES.fonts.normal }),
+          new TextRun({ text: data.bankDetails.bankName + '\n', ...STYLES.fonts.normal }),
+          new TextRun({ text: `Account No: ${data.bankDetails.accountNo}\n`, ...STYLES.fonts.normal }),
+          new TextRun({ text: `NEFT/RTGS IFSC: ${data.bankDetails.ifscCode}\n`, ...STYLES.fonts.normal }),
+          new TextRun({ text: `Branch code: ${data.bankDetails.branchCode}\n`, ...STYLES.fonts.normal }),
+          new TextRun({ text: `Micro code: ${data.bankDetails.microCode}\n`, ...STYLES.fonts.normal }),
+          new TextRun({ text: `Account type: ${data.bankDetails.accountType}`, ...STYLES.fonts.normal })
+        ]),
         new Paragraph({ text: '' }),
 
         // Terms & Conditions
-        new Paragraph({
-          children: [
-            new TextRun({ text: 'Terms & Conditions:', bold: true, size: 24 }),
-          ],
-        }),
-        new Paragraph({
-          children: [
-            new TextRun({ text: `• Payment: ${data.paymentTerms}`, size: 24 }),
-          ],
-        }),
-        new Paragraph({
-          children: [
-            new TextRun({ 
-              text: `• Validity: ${formatDate(data.validTill)}`, 
-              size: 24 
-            }),
-          ],
-        }),
-        new Paragraph({
-          children: [
-            new TextRun({ text: '• Please check specification before order', size: 24 }),
-          ],
-        }),
+        createBorderedParagraph([
+          new TextRun({ text: 'Terms & Conditions\n', bold: true, ...STYLES.fonts.normal }),
+          new TextRun({ text: `1. Payment Terms: ${data.paymentTerms}\n`, ...STYLES.fonts.normal }),
+          new TextRun({ text: `2. Validity: ${formatDate(data.validTill)}\n`, ...STYLES.fonts.normal }),
+          new TextRun({ text: '3. Prices are Ex-Works unless specified otherwise\n', ...STYLES.fonts.normal }),
+          new TextRun({ text: '4. Delivery: As per mentioned lead time\n', ...STYLES.fonts.normal }),
+          new TextRun({ text: '5. Please check specifications before order\n', ...STYLES.fonts.normal }),
+          new TextRun({ text: '6. GST will be charged extra as applicable\n', ...STYLES.fonts.normal }),
+          new TextRun({ text: '7. Subject to jurisdiction\n', ...STYLES.fonts.normal })
+        ]),
         new Paragraph({ text: '' }),
 
-        // Notes
+        // Notes if any
         ...(data.notes ? [
-          new Paragraph({
-            children: [
-              new TextRun({ text: 'Notes:', bold: true, size: 24 }),
-            ],
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({ text: data.notes, size: 24 }),
-            ],
-          }),
-          new Paragraph({ text: '' }),
+          createBorderedParagraph([
+            new TextRun({ text: 'Notes:\n', bold: true, ...STYLES.fonts.normal }),
+            new TextRun({ text: data.notes, ...STYLES.fonts.normal })
+          ]),
+          new Paragraph({ text: '' })
         ] : []),
 
-        // Signature
-        new Paragraph({
-          children: [
-            new TextRun({ text: data.billFrom.name, size: 24 }),
-          ],
-        }),
-        new Paragraph({
-          children: [
-            new TextRun({ text: 'Authorized Signatory', size: 24 }),
-          ],
-        }),
-      ],
-    }],
+        // Signature Block
+        new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          borders: {
+            top: { style: BorderStyle.NONE },
+            bottom: { style: BorderStyle.NONE },
+            left: { style: BorderStyle.NONE },
+            right: { style: BorderStyle.NONE }
+          },
+          rows: [
+            new TableRow({
+              children: [
+                new TableCell({
+                  borders: {
+                    top: { style: BorderStyle.NONE },
+                    bottom: { style: BorderStyle.NONE },
+                    left: { style: BorderStyle.NONE },
+                    right: { style: BorderStyle.NONE }
+                  },
+                  children: [
+                    new Paragraph({ text: '' }),
+                    new Paragraph({ text: '' }),
+                    new Paragraph({
+                      children: [
+                        new TextRun({ 
+                          text: 'For ' + data.billFrom.name,
+                          bold: true,
+                          ...STYLES.fonts.normal
+                        })
+                      ]
+                    }),
+                    new Paragraph({ text: '' }),
+                    new Paragraph({ text: '' }),
+                    new Paragraph({ text: '' }),
+                    new Paragraph({
+                      children: [
+                        new TextRun({ 
+                          text: 'Authorized Signatory',
+                          ...STYLES.fonts.normal
+                        })
+                      ]
+                    })
+                  ]
+                })
+              ]
+            })
+          ]
+        })
+      ]
+    }]
   });
 
   const buffer = await Packer.toBlob(doc);
-  saveAs(buffer, 'Quotation.docx');
+  saveAs(buffer, `Quotation_${data.quotationRef}.docx`);
 };
