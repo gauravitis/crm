@@ -467,53 +467,53 @@ export const generateWord = async (data: QuotationData) => {
             new TableRow({
               tableHeader: true,
               children: [
-                'S.No', 'Cat No.', 'Pack Size', 'Description', 'HSN Code', 'Qty', 'Unit Rate',
-                'Discount %', 'Discount Value', 'GST %', 'GST Value', 'Total', 'Lead Time', 'Make'
+                'S.No', 'Cat No.', 'Description', 'Pack Size', 'HSN Code', 'Qty', 'Unit Rate',
+                'Discount %', 'Discounted Price', 'Expanded Price', 'GST %', 'GST Value', 'Total', 'Lead Time', 'Make'
               ].map((header, index) => {
                 // Define column widths based on content type
                 let columnWidth = 8; // default width
                 switch(header) {
                   case 'Description':
-                    columnWidth = 18;
+                    columnWidth = 22;
                     break;
                   case 'S.No':
                     columnWidth = 4;
                     break;
                   case 'HSN Code':
-                    columnWidth = 8;
-                    break;
-                  case 'Cat No.':
-                  case 'Pack Size':
                     columnWidth = 7;
                     break;
+                  case 'Cat No.':
+                    columnWidth = 6;
+                    break;
+                  case 'Pack Size':
+                    columnWidth = 6;
+                    break;
                   case 'Qty':
-                    columnWidth = 5;
+                    columnWidth = 4;
                     break;
                   case 'GST %':
                   case 'Discount %':
-                    columnWidth = 4;
+                    columnWidth = 2;
                     break;
                   case 'Unit Rate':
-                  case 'Discount Value':
                   case 'GST Value':
-                    columnWidth = 9;
+                  case 'Discounted Price':
+                  case 'Expanded Price':
+                    columnWidth = 6;
                     break;
                   case 'Total':
-                    columnWidth = 7;
+                    columnWidth = 11;
                     break;
                   case 'Lead Time':
-                    columnWidth = 5;
+                    columnWidth = 11;
                     break;
                   case 'Make':
-                    columnWidth = 9;
+                    columnWidth = 15;
                     break;
                 }
 
                 // Determine text alignment based on column content
-                const shouldCenter = [
-                  'S.No', 'Cat No.', 'Pack Size', 'HSN Code', 'Qty', 
-                  'Discount %', 'Discount Value', 'GST %', 'GST Value', 'Total'
-                ].includes(header);
+                const shouldCenter = true; // Center align all headers
 
                 return new TableCell({
                   shading: {
@@ -527,11 +527,7 @@ export const generateWord = async (data: QuotationData) => {
                   },
                   children: [
                     new Paragraph({
-                      alignment: shouldCenter 
-                        ? AlignmentType.CENTER 
-                        : ['Unit Rate'].includes(header)
-                          ? AlignmentType.RIGHT
-                          : AlignmentType.LEFT,
+                      alignment: AlignmentType.CENTER,  // Center align all headers
                       children: [
                         new TextRun({ 
                           text: header,
@@ -546,63 +542,76 @@ export const generateWord = async (data: QuotationData) => {
               })
             }),
             // Data rows
-            ...data.items.map((item, index) => new TableRow({
-              children: [
-                item.sno.toString(),
-                item.cat_no,
-                item.pack_size,
-                item.product_description,
-                item.hsn_code,
-                item.qty.toString(),
-                formatCurrency(item.unit_rate),
-                `${item.discount_percent}%`,
-                formatCurrency(item.discounted_value),
-                `${item.gst_percent}%`,
-                formatCurrency(item.gst_value),
-                formatCurrency(item.total_price),
-                item.lead_time,
-                item.make
-              ].map((text, colIndex) => {
-                // Determine if this column should be centered
-                const shouldCenter = [0, 1, 2, 4, 5, 7, 8, 9, 10, 11].includes(colIndex);
-                
-                return new TableCell({
-                  shading: {
-                    fill: index % 2 === 0 ? STYLES.colors.accent : "FFFFFF",
-                    type: ShadingType.CLEAR,
-                    color: "auto"
-                  },
-                  width: {
-                    size: colIndex === 3 ? 18 : 
-                          colIndex === 0 ? 4 :
-                          colIndex === 4 ? 8 :
-                          [1, 2].includes(colIndex) ? 7 :
-                          [5].includes(colIndex) ? 5 :
-                          [7, 9].includes(colIndex) ? 4 :
-                          [6, 8, 10].includes(colIndex) ? 9 :
-                          colIndex === 12 ? 5 :
-                          colIndex === 13 ? 9 : 7,
-                    type: WidthType.PERCENTAGE
-                  },
-                  verticalAlign: "center",
-                  children: [
-                    new Paragraph({
-                      alignment: shouldCenter
-                        ? AlignmentType.CENTER
-                        : [6].includes(colIndex)
-                          ? AlignmentType.RIGHT
-                          : AlignmentType.LEFT,
-                      children: [
-                        new TextRun({ 
-                          text,
-                          ...STYLES.fonts.normal
-                        })
-                      ]
-                    })
-                  ]
-                });
-              })
-            }))
+            ...data.items.map((item, index) => {
+              // Calculate discounted price (Unit Rate - Discount %)
+              const discountedPrice = Number((item.unit_rate * (1 - item.discount_percent / 100)).toFixed(2));
+              // Calculate expanded price (Discounted Price * Qty)
+              const expandedPrice = Number((discountedPrice * item.qty).toFixed(2));
+              // Calculate GST on expanded price
+              const gstValue = Number((expandedPrice * (item.gst_percent / 100)).toFixed(2));
+              // Calculate total price
+              const totalPrice = Number((expandedPrice + gstValue).toFixed(2));
+              
+              return new TableRow({
+                children: [
+                  item.sno.toString(),
+                  item.cat_no,
+                  item.product_description,
+                  item.pack_size,
+                  item.hsn_code,
+                  item.qty.toString(),
+                  formatCurrency(item.unit_rate),
+                  `${item.discount_percent}%`,
+                  formatCurrency(discountedPrice),
+                  formatCurrency(expandedPrice),
+                  `${item.gst_percent}%`,
+                  formatCurrency(gstValue),
+                  formatCurrency(totalPrice),
+                  item.lead_time || '',
+                  item.make || ''
+                ].map((text, colIndex) => {
+                  // Determine if this column should be centered
+                  const shouldCenter = [0, 1, 3, 4, 5, 7, 10].includes(colIndex);
+                  
+                  return new TableCell({
+                    shading: {
+                      fill: index % 2 === 0 ? STYLES.colors.accent : "FFFFFF",
+                      type: ShadingType.CLEAR,
+                      color: "auto"
+                    },
+                    width: {
+                      size: colIndex === 2 ? 22 : // Description
+                            colIndex === 0 ? 4 :  // S.No
+                            colIndex === 4 ? 7 :  // HSN Code
+                            [1, 3].includes(colIndex) ? 6 :  // Cat No., Pack Size
+                            colIndex === 5 ? 4 :  // Qty
+                            [7, 10].includes(colIndex) ? 2 :  // Discount %, GST %
+                            [6, 8, 9, 11].includes(colIndex) ? 6 :  // Unit Rate, Discounted Price, Expanded Price, GST Value
+                            colIndex === 12 ? 11 :  // Total
+                            colIndex === 13 ? 11 :  // Lead Time
+                            colIndex === 14 ? 15 : 6,  // Make
+                      type: WidthType.PERCENTAGE
+                    },
+                    verticalAlign: "center",
+                    children: [
+                      new Paragraph({
+                        alignment: shouldCenter
+                          ? AlignmentType.CENTER
+                          : [6, 8, 9, 11, 12].includes(colIndex)  // Monetary values
+                            ? AlignmentType.RIGHT
+                            : AlignmentType.LEFT,
+                        children: [
+                          new TextRun({ 
+                            text,
+                            ...STYLES.fonts.normal
+                          })
+                        ]
+                      })
+                    ]
+                  });
+                })
+              });
+            })
           ]
         }),
         new Paragraph({ text: '' }),

@@ -51,11 +51,11 @@ export default function ItemForm({ onSubmit, onCancel, initialData }: ItemFormPr
             </div>
 
             <div className="space-y-4">
-              <Label htmlFor="sku" className="text-base font-medium">SKU</Label>
+              <Label htmlFor="sku" className="text-base font-medium">CAS</Label>
               <Input
                 id="sku"
-                {...register('sku', { required: 'SKU is required' })}
-                placeholder="SKU"
+                {...register('sku', { required: 'CAS is required' })}
+                placeholder="CAS"
                 className={`h-12 text-lg ${errors.sku ? 'border-red-500' : ''}`}
               />
               {errors.sku && (
