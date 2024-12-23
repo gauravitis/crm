@@ -310,26 +310,31 @@ export const generateWord = async (data: QuotationData) => {
             new TableRow({
               tableHeader: true,
               children: [
-                'S.No', 'Cat No.', 'Pack Size', 'Description', 'Qty', 'Unit Rate',
+                'S.No', 'Cat No.', 'Pack Size', 'Description', 'HSN Code', 'Qty', 'Unit Rate',
                 'Discount %', 'Discount Value', 'GST %', 'GST Value', 'Total', 'Lead Time', 'Make'
               ].map((header, index) => {
                 // Define column widths based on content type
                 let columnWidth = 8; // default width
                 switch(header) {
                   case 'Description':
-                    columnWidth = 20;
+                    columnWidth = 18;
                     break;
                   case 'S.No':
-                    columnWidth = 5;
+                    columnWidth = 4;
+                    break;
+                  case 'HSN Code':
+                    columnWidth = 8;
                     break;
                   case 'Cat No.':
                   case 'Pack Size':
-                    columnWidth = 8;
+                    columnWidth = 7;
                     break;
                   case 'Qty':
+                    columnWidth = 5;
+                    break;
                   case 'GST %':
                   case 'Discount %':
-                    columnWidth = 6;
+                    columnWidth = 4;
                     break;
                   case 'Unit Rate':
                   case 'Discount Value':
@@ -340,14 +345,16 @@ export const generateWord = async (data: QuotationData) => {
                     columnWidth = 7;
                     break;
                   case 'Lead Time':
+                    columnWidth = 5;
+                    break;
                   case 'Make':
-                    columnWidth = 8;
+                    columnWidth = 9;
                     break;
                 }
 
                 // Determine text alignment based on column content
                 const shouldCenter = [
-                  'S.No', 'Cat No.', 'Pack Size', 'Qty', 
+                  'S.No', 'Cat No.', 'Pack Size', 'HSN Code', 'Qty', 
                   'Discount %', 'Discount Value', 'GST %', 'GST Value', 'Total'
                 ].includes(header);
 
@@ -388,6 +395,7 @@ export const generateWord = async (data: QuotationData) => {
                 item.cat_no,
                 item.pack_size,
                 item.product_description,
+                item.hsn_code,
                 item.qty.toString(),
                 formatCurrency(item.unit_rate),
                 `${item.discount_percent}%`,
@@ -399,7 +407,7 @@ export const generateWord = async (data: QuotationData) => {
                 item.make
               ].map((text, colIndex) => {
                 // Determine if this column should be centered
-                const shouldCenter = [0, 1, 2, 4, 6, 7, 8, 9, 10].includes(colIndex);
+                const shouldCenter = [0, 1, 2, 4, 5, 7, 8, 9, 10, 11].includes(colIndex);
                 
                 return new TableCell({
                   shading: {
@@ -408,11 +416,15 @@ export const generateWord = async (data: QuotationData) => {
                     color: "auto"
                   },
                   width: {
-                    size: colIndex === 3 ? 20 : 
-                          colIndex === 0 ? 5 :
-                          [4, 8, 6].includes(colIndex) ? 6 :
-                          [5, 7, 9].includes(colIndex) ? 9 :
-                          colIndex === 10 ? 7 : 8,
+                    size: colIndex === 3 ? 18 : 
+                          colIndex === 0 ? 4 :
+                          colIndex === 4 ? 8 :
+                          [1, 2].includes(colIndex) ? 7 :
+                          [5].includes(colIndex) ? 5 :
+                          [7, 9].includes(colIndex) ? 4 :
+                          [6, 8, 10].includes(colIndex) ? 9 :
+                          colIndex === 12 ? 5 :
+                          colIndex === 13 ? 9 : 7,
                     type: WidthType.PERCENTAGE
                   },
                   verticalAlign: "center",
@@ -420,7 +432,7 @@ export const generateWord = async (data: QuotationData) => {
                     new Paragraph({
                       alignment: shouldCenter
                         ? AlignmentType.CENTER
-                        : [5].includes(colIndex)
+                        : [6].includes(colIndex)
                           ? AlignmentType.RIGHT
                           : AlignmentType.LEFT,
                       children: [

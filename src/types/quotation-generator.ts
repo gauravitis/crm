@@ -33,6 +33,7 @@ export interface QuotationItemData {
   gst: number;
   make?: string;
   leadTime?: string;
+  hsnCode?: string;
 }
 
 export interface QuotationProduct {
@@ -40,6 +41,7 @@ export interface QuotationProduct {
   cat_no: string;
   pack_size: string;
   product_description: string;
+  hsn_code: string;
   qty: number;
   unit_rate: number;
   discount_percent: number;

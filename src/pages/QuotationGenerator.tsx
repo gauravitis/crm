@@ -44,6 +44,7 @@ const defaultProduct: QuotationProduct = {
   cat_no: '',
   pack_size: '',
   product_description: '',
+  hsn_code: '',
   qty: 1,
   unit_rate: 0,
   discount_percent: 0,
@@ -331,18 +332,18 @@ export default function QuotationGenerator() {
     setFocusedItemIndex(index);
   };
 
-  const handleItemSelect = (index: number, item: any) => {
+  const handleItemSelect = (index: number, selectedItem: any) => {
     const updatedItems = [...quotationData.items];
     updatedItems[index] = {
       ...updatedItems[index],
-      cat_no: item.catalogueId || '',
-      pack_size: item.packSize || '',
-      product_description: item.name || '',
-      unit_rate: Number(item.price || 0),
-      make: item.brand || '',
+      cat_no: selectedItem.catalogueId || '',
+      pack_size: selectedItem.packSize || '',
+      product_description: selectedItem.name || '',
+      hsn_code: selectedItem.hsnCode || '',
+      unit_rate: selectedItem.price || 0,
+      make: selectedItem.brand || '',
       lead_time: '1-2 weeks'
     };
-
     setQuotationData(prev => ({
       ...prev,
       items: updatedItems
@@ -521,6 +522,7 @@ export default function QuotationGenerator() {
                     <TableHead className="w-[120px] font-medium">Cat No.</TableHead>
                     <TableHead className="w-[100px] font-medium">Pack Size</TableHead>
                     <TableHead className="min-w-[250px] font-medium">Description</TableHead>
+                    <TableHead className="w-[100px] text-center font-medium">HSN Code</TableHead>
                     <TableHead className="w-[100px] text-right font-medium">Qty</TableHead>
                     <TableHead className="w-[120px] text-right font-medium">Unit Rate</TableHead>
                     <TableHead className="w-[100px] text-right font-medium">Discount %</TableHead>
@@ -577,6 +579,14 @@ export default function QuotationGenerator() {
                           value={item.product_description}
                           onChange={(e) => handleItemChange(index, 'product_description', e.target.value)}
                           className="text-base min-w-[200px]"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="text"
+                          value={item.hsn_code}
+                          onChange={(e) => handleItemChange(index, 'hsn_code', e.target.value)}
+                          className="text-base min-w-[100px]"
                         />
                       </TableCell>
                       <TableCell>
