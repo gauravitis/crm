@@ -18,7 +18,8 @@ import {
   convertInchesToTwip,
   LevelFormat,
   NumberFormat,
-  ITableCellMarginOptions
+  ITableCellMarginOptions,
+  VerticalAlign
 } from 'docx';
 import { saveAs } from "file-saver";
 import { QuotationData } from '../types/quotation-generator';
@@ -68,6 +69,12 @@ const STYLES = {
       bottom: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
       left: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
       right: { style: BorderStyle.SINGLE, size: 1, color: '000000' }
+    },
+    none: {
+      top: { style: BorderStyle.NONE },
+      bottom: { style: BorderStyle.NONE },
+      left: { style: BorderStyle.NONE },
+      right: { style: BorderStyle.NONE }
     }
   },
   cellMargin: {
@@ -120,6 +127,97 @@ export const generateWord = async (data: QuotationData) => {
       headers: {
         default: new Header({
           children: [
+            new Table({
+              width: {
+                size: 100,
+                type: WidthType.PERCENTAGE,
+              },
+              borders: {
+                top: { style: BorderStyle.NONE },
+                bottom: { style: BorderStyle.NONE },
+                left: { style: BorderStyle.NONE },
+                right: { style: BorderStyle.NONE },
+                insideHorizontal: { style: BorderStyle.NONE },
+                insideVertical: { style: BorderStyle.NONE },
+              },
+              rows: [
+                new TableRow({
+                  children: [
+                    // Center column with company details
+                    new TableCell({
+                      width: {
+                        size: 100,
+                        type: WidthType.PERCENTAGE,
+                      },
+                      children: [
+                        new Paragraph({
+                          alignment: AlignmentType.CENTER,
+                          spacing: { before: 200, after: 200 },
+                          children: [
+                            new TextRun({
+                              text: "CHEMBIO LIFESCIENCES",
+                              bold: true,
+                              size: 28,
+                              font: "Arial",
+                            }),
+                          ],
+                        }),
+                        new Paragraph({
+                          alignment: AlignmentType.CENTER,
+                          children: [
+                            new TextRun({
+                              text: "L-10, Himalaya Legend, Nyay Khand-1",
+                              size: 24,
+                              font: "Arial",
+                            }),
+                          ],
+                        }),
+                        new Paragraph({
+                          alignment: AlignmentType.CENTER,
+                          children: [
+                            new TextRun({
+                              text: "Indirapuram, Ghaziabad - 201014",
+                              size: 24,
+                              font: "Arial",
+                            }),
+                          ],
+                        }),
+                        new Paragraph({
+                          alignment: AlignmentType.CENTER,
+                          children: [
+                            new TextRun({
+                              text: "Email:- sales.chembio@gmail.com",
+                              size: 24,
+                              font: "Arial",
+                            }),
+                          ],
+                        }),
+                        new Paragraph({
+                          alignment: AlignmentType.CENTER,
+                          children: [
+                            new TextRun({
+                              text: "0120-4909400",
+                              size: 24,
+                              font: "Arial",
+                            }),
+                          ],
+                        }),
+                        new Paragraph({
+                          alignment: AlignmentType.CENTER,
+                          children: [
+                            new TextRun({
+                              text: "PAN NO.: AALFC0922C | GST NO.: 09AALFC0922C1ZU",
+                              size: 24,
+                              font: "Arial",
+                            }),
+                          ],
+                        }),
+                      ],
+                    }),
+                  ],
+                }),
+              ],
+            }),
             new Paragraph({
               alignment: AlignmentType.RIGHT,
               children: [
@@ -171,12 +269,16 @@ export const generateWord = async (data: QuotationData) => {
       children: [
         // Company Header with background
         new Table({
-          width: { size: 100, type: WidthType.PERCENTAGE },
-          borders: STYLES.borders.default,
+          width: {
+            size: 100,
+            type: WidthType.PERCENTAGE,
+          },
+          borders: STYLES.borders.none,
           rows: [
             new TableRow({
               children: [
                 new TableCell({
+                  borders: STYLES.borders.none,
                   shading: {
                     fill: STYLES.colors.primary,
                     type: ShadingType.CLEAR,
@@ -185,34 +287,89 @@ export const generateWord = async (data: QuotationData) => {
                   children: [
                     new Paragraph({
                       alignment: AlignmentType.CENTER,
-                      spacing: { before: STYLES.spacing.large, after: STYLES.spacing.normal },
+                      spacing: { before: 200, after: 100 },
                       children: [
-                        new TextRun({ 
-                          text: data.billFrom.name,
+                        new TextRun({
+                          text: "CHEMBIO LIFESCIENCES",
                           bold: true,
+                          size: 28,
+                          font: "Arial",
                           color: "FFFFFF",
-                          ...STYLES.fonts.header
-                        })
-                      ]
+                        }),
+                      ],
                     }),
                     new Paragraph({
                       alignment: AlignmentType.CENTER,
-                      spacing: { before: STYLES.spacing.normal, after: STYLES.spacing.large },
+                      spacing: { before: 100, after: 100 },
                       children: [
-                        new TextRun({ 
-                          text: `PAN: ${data.billFrom.pan} | GST: ${data.billFrom.gst}`,
+                        new TextRun({
+                          text: "L-10, Himalaya Legend, Nyay Khand-1",
+                          size: 24,
+                          font: "Arial",
                           color: "FFFFFF",
-                          ...STYLES.fonts.subHeader
-                        })
-                      ]
-                    })
-                  ]
-                })
-              ]
-            })
-          ]
+                        }),
+                      ],
+                    }),
+                    new Paragraph({
+                      alignment: AlignmentType.CENTER,
+                      spacing: { before: 100, after: 100 },
+                      children: [
+                        new TextRun({
+                          text: "Indirapuram, Ghaziabad - 201014",
+                          size: 24,
+                          font: "Arial",
+                          color: "FFFFFF",
+                        }),
+                      ],
+                    }),
+                    new Paragraph({
+                      alignment: AlignmentType.CENTER,
+                      spacing: { before: 100, after: 100 },
+                      children: [
+                        new TextRun({
+                          text: "Email:- sales.chembio@gmail.com",
+                          size: 24,
+                          font: "Arial",
+                          color: "FFFFFF",
+                        }),
+                      ],
+                    }),
+                    new Paragraph({
+                      alignment: AlignmentType.CENTER,
+                      spacing: { before: 100, after: 100 },
+                      children: [
+                        new TextRun({
+                          text: "0120-4909400",
+                          size: 24,
+                          font: "Arial",
+                          color: "FFFFFF",
+                        }),
+                      ],
+                    }),
+                    new Paragraph({
+                      alignment: AlignmentType.CENTER,
+                      spacing: { before: 100, after: 200 },
+                      children: [
+                        new TextRun({
+                          text: "PAN NO.: AALFC0922C | GST NO.: 09AALFC0922C1ZU",
+                          size: 24,
+                          font: "Arial",
+                          color: "FFFFFF",
+                        }),
+                      ],
+                    }),
+                  ],
+                }),
+              ],
+            }),
+          ],
         }),
-        new Paragraph({ text: '' }),
+
+        // Add some space after the header
+        new Paragraph({
+          spacing: { before: 300, after: 300 },
+          children: [new TextRun({ text: "" })]
+        }),
 
         // Quotation Title
         new Paragraph({
