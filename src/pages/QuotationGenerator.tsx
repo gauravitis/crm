@@ -71,8 +71,8 @@ const defaultQuotationData: QuotationData = {
     pan: 'AALFC0922C',
   },
   quotationRef: '',
-  quotationDate: format(new Date(), 'dd/MM/yyyy'),
-  validTill: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'dd/MM/yyyy'),
+  quotationDate: new Date().toISOString(),
+  validTill: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
   items: [defaultProduct],
   subTotal: 0,
   tax: 0,
@@ -89,21 +89,31 @@ const defaultQuotationData: QuotationData = {
   },
 };
 
+const formatDateForDisplay = (dateStr: string) => {
+  try {
+    const date = parse(dateStr, 'dd/MM/yyyy', new Date());
+    return format(date, 'dd/MM/yyyy');
+  } catch {
+    try {
+      const date = new Date(dateStr);
+      return format(date, 'dd/MM/yyyy');
+    } catch {
+      return dateStr;
+    }
+  }
+};
+
 const formatDateForInput = (dateStr: string) => {
   try {
     const date = parse(dateStr, 'dd/MM/yyyy', new Date());
     return format(date, 'yyyy-MM-dd');
   } catch {
-    return dateStr;
-  }
-};
-
-const formatDateForDisplay = (dateStr: string) => {
-  try {
-    const date = parse(dateStr, 'yyyy-MM-dd', new Date());
-    return format(date, 'dd/MM/yyyy');
-  } catch {
-    return dateStr;
+    try {
+      const date = new Date(dateStr);
+      return format(date, 'yyyy-MM-dd');
+    } catch {
+      return dateStr;
+    }
   }
 };
 
@@ -206,7 +216,14 @@ export default function QuotationGenerator() {
 
   const handleGenerateQuotation = async () => {
     try {
-      await generateWord(quotationData);
+      // Ensure dates are in the correct format before generating Word document
+      const formattedData = {
+        ...quotationData,
+        quotationDate: format(new Date(), 'dd/MM/yyyy'),
+        validTill: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'dd/MM/yyyy')
+      };
+      console.log('Generating quotation with data:', formattedData);
+      await generateWord(formattedData);
       toast.success('Word document generated successfully!');
     } catch (error) {
       console.error('Error generating docx document:', error);
@@ -216,24 +233,22 @@ export default function QuotationGenerator() {
 
   const handleSaveQuotation = async () => {
     try {
-      const total = quotationData.items.reduce((sum, item) => {
-        const itemTotal = calculateItemTotal(item);
-        return sum + itemTotal;
-      }, 0);
+      // Ensure all numeric values are properly converted
+      const processedItems = quotationData.items.map(item => ({
+        ...item,
+        qty: Number(item.qty || 0),
+        unit_rate: Number(item.unit_rate || 0),
+        discount_percent: Number(item.discount_percent || 0),
+        gst_percent: Number(item.gst_percent || 0),
+        total_price: Number(item.total_price || 0)
+      }));
 
       const quotationToSave = {
-        quotationRef: quotationData.quotationRef,
-        billTo: quotationData.billTo,
-        quotationDate: quotationData.quotationDate,
-        validTill: quotationData.validTill,
-        items: quotationData.items,
-        subTotal: quotationData.subTotal,
-        tax: quotationData.tax,
-        grandTotal: quotationData.grandTotal,
-        paymentTerms: quotationData.paymentTerms,
-        notes: quotationData.notes,
-        status: 'PENDING' as const,
-        createdAt: new Date().toISOString()
+        ...quotationData,
+        items: processedItems,
+        subTotal: Number(quotationData.subTotal || 0),
+        tax: Number(quotationData.tax || 0),
+        grandTotal: Number(quotationData.grandTotal || 0)
       };
       
       await addQuotation(quotationToSave);
@@ -323,7 +338,7 @@ export default function QuotationGenerator() {
       cat_no: item.catalogueId || '',
       pack_size: item.packSize || '',
       product_description: item.name || '',
-      unit_rate: item.price || 0,
+      unit_rate: Number(item.price || 0),
       make: item.brand || '',
       lead_time: '1-2 weeks'
     };

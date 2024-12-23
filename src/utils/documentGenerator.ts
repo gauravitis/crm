@@ -1,16 +1,34 @@
 import { Document, Paragraph, Table, TableRow, TableCell, TextRun, AlignmentType, BorderStyle, WidthType } from 'docx';
 import { saveAs } from "file-saver";
 import { QuotationData } from '../types/quotation-generator';
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 import { Packer } from "docx";
 
 const formatCurrency = (amount: number | string): string => {
   const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-  if (isNaN(numericAmount)) return '₹0.00';
-  return `₹${numericAmount.toFixed(2)}`;
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(numericAmount);
+};
+
+const formatDate = (dateStr: string): string => {
+  try {
+    // First try parsing as dd/MM/yyyy
+    const date = parse(dateStr, 'dd/MM/yyyy', new Date());
+    return format(date, 'dd/MM/yyyy');
+  } catch {
+    try {
+      // If that fails, try parsing as ISO string
+      const date = new Date(dateStr);
+      return format(date, 'dd/MM/yyyy');
+    } catch {
+      // If all parsing fails, return the original string
+      return dateStr;
+    }
+  }
 };
 
 export const generateWord = async (data: QuotationData) => {
+  console.log('Quotation Date:', data.quotationDate);
+  console.log('Valid Till:', data.validTill);
   const doc = new Document({
     sections: [{
       properties: {},
@@ -82,7 +100,10 @@ export const generateWord = async (data: QuotationData) => {
         new Paragraph({
           children: [
             new TextRun({ text: `Ref No: ${data.quotationRef}`, size: 24 }),
-            new TextRun({ text: `\tDate: ${format(new Date(data.quotationDate), 'dd/MM/yyyy')}`, size: 24 }),
+            new TextRun({ 
+              text: `\tDate: ${formatDate(data.quotationDate)}`, 
+              size: 24 
+            }),
           ],
         }),
         new Paragraph({ text: '' }),
@@ -183,7 +204,10 @@ export const generateWord = async (data: QuotationData) => {
         }),
         new Paragraph({
           children: [
-            new TextRun({ text: `• Validity: ${format(new Date(data.validTill), 'dd/MM/yyyy')}`, size: 24 }),
+            new TextRun({ 
+              text: `• Validity: ${formatDate(data.validTill)}`, 
+              size: 24 
+            }),
           ],
         }),
         new Paragraph({

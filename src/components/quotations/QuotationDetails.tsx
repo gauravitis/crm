@@ -62,6 +62,11 @@ export default function QuotationDetails({ quotation, onClose, onSave }: Quotati
     }
   };
 
+  const formatNumber = (value: any, decimals: number = 2): string => {
+    const num = Number(value || 0);
+    return isNaN(num) ? '0' : num.toFixed(decimals);
+  };
+
   return (
     <div className="space-y-6">
       {/* Reference and Status */}
@@ -127,25 +132,25 @@ export default function QuotationDetails({ quotation, onClose, onSave }: Quotati
               {(quotation.items || []).map((item, index) => (
                 <tr key={index}>
                   <td className="px-4 py-2 text-sm">{item.product_description || 'N/A'}</td>
-                  <td className="px-4 py-2 text-sm text-right">{item.qty || 0}</td>
-                  <td className="px-4 py-2 text-sm text-right">₹{(item.unit_rate || 0).toFixed(2)}</td>
-                  <td className="px-4 py-2 text-sm text-right">{(item.gst_percent || 0)}%</td>
-                  <td className="px-4 py-2 text-sm text-right">₹{(item.total_price || 0).toFixed(2)}</td>
+                  <td className="px-4 py-2 text-sm text-right">{formatNumber(item.qty, 0)}</td>
+                  <td className="px-4 py-2 text-sm text-right">₹{formatNumber(item.unit_rate)}</td>
+                  <td className="px-4 py-2 text-sm text-right">{formatNumber(item.gst_percent, 0)}%</td>
+                  <td className="px-4 py-2 text-sm text-right">₹{formatNumber(item.total_price)}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot className="bg-gray-50">
               <tr>
                 <td colSpan={4} className="px-4 py-2 text-sm font-medium text-right">Sub Total:</td>
-                <td className="px-4 py-2 text-sm text-right">₹{(quotation.subTotal || 0).toFixed(2)}</td>
+                <td className="px-4 py-2 text-sm text-right">₹{formatNumber(quotation.subTotal)}</td>
               </tr>
               <tr>
                 <td colSpan={4} className="px-4 py-2 text-sm font-medium text-right">Tax:</td>
-                <td className="px-4 py-2 text-sm text-right">₹{(quotation.tax || 0).toFixed(2)}</td>
+                <td className="px-4 py-2 text-sm text-right">₹{formatNumber(quotation.tax)}</td>
               </tr>
               <tr>
                 <td colSpan={4} className="px-4 py-2 text-sm font-medium text-right">Grand Total:</td>
-                <td className="px-4 py-2 text-sm text-right font-bold">₹{(quotation.grandTotal || 0).toFixed(2)}</td>
+                <td className="px-4 py-2 text-sm text-right font-bold">₹{formatNumber(quotation.grandTotal)}</td>
               </tr>
             </tfoot>
           </table>
