@@ -517,20 +517,20 @@ export default function QuotationGenerator() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-50/80">
-                    <TableHead className="w-[80px] text-center font-medium">S.No</TableHead>
-                    <TableHead className="font-medium">Cat No.</TableHead>
-                    <TableHead className="font-medium">Pack Size</TableHead>
-                    <TableHead className="min-w-[200px] font-medium">Description</TableHead>
-                    <TableHead className="w-[80px] text-right font-medium">Qty</TableHead>
-                    <TableHead className="text-right font-medium">Unit Rate</TableHead>
+                    <TableHead className="w-[60px] text-center font-medium">S.No</TableHead>
+                    <TableHead className="w-[120px] font-medium">Cat No.</TableHead>
+                    <TableHead className="w-[100px] font-medium">Pack Size</TableHead>
+                    <TableHead className="min-w-[250px] font-medium">Description</TableHead>
+                    <TableHead className="w-[100px] text-right font-medium">Qty</TableHead>
+                    <TableHead className="w-[120px] text-right font-medium">Unit Rate</TableHead>
                     <TableHead className="w-[100px] text-right font-medium">Discount %</TableHead>
-                    <TableHead className="text-right font-medium">Discount Value</TableHead>
-                    <TableHead className="w-[80px] text-right font-medium">GST %</TableHead>
-                    <TableHead className="text-right font-medium">GST Value</TableHead>
-                    <TableHead className="text-right font-medium">Total</TableHead>
-                    <TableHead className="font-medium">Lead Time</TableHead>
-                    <TableHead className="font-medium">Make</TableHead>
-                    <TableHead className="w-[80px] font-medium">Actions</TableHead>
+                    <TableHead className="w-[120px] text-right font-medium">Discount Value</TableHead>
+                    <TableHead className="w-[100px] text-right font-medium">GST %</TableHead>
+                    <TableHead className="w-[120px] text-right font-medium">GST Value</TableHead>
+                    <TableHead className="w-[120px] text-right font-medium">Total</TableHead>
+                    <TableHead className="w-[120px] font-medium">Lead Time</TableHead>
+                    <TableHead className="w-[120px] font-medium">Make</TableHead>
+                    <TableHead className="w-[60px] font-medium">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -546,7 +546,7 @@ export default function QuotationGenerator() {
                             handleItemChange(index, 'cat_no', e.target.value);
                           }}
                           placeholder="Enter catalog number"
-                          className="w-full"
+                          className="text-base min-w-[120px]"
                         />
                         {showItemSuggestions && itemSuggestions.length > 0 && index === focusedItemIndex && (
                           <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
@@ -568,7 +568,7 @@ export default function QuotationGenerator() {
                           type="text"
                           value={item.pack_size}
                           onChange={(e) => handleItemChange(index, 'pack_size', e.target.value)}
-                          className="text-base"
+                          className="text-base min-w-[90px]"
                         />
                       </TableCell>
                       <TableCell>
@@ -576,7 +576,7 @@ export default function QuotationGenerator() {
                           type="text"
                           value={item.product_description}
                           onChange={(e) => handleItemChange(index, 'product_description', e.target.value)}
-                          className="text-base"
+                          className="text-base min-w-[200px]"
                         />
                       </TableCell>
                       <TableCell>
@@ -584,7 +584,7 @@ export default function QuotationGenerator() {
                           type="number"
                           value={item.qty}
                           onChange={(e) => handleItemChange(index, 'qty', e.target.value)}
-                          className="text-base text-right"
+                          className="text-base text-right min-w-[80px]"
                         />
                       </TableCell>
                       <TableCell>
@@ -592,7 +592,7 @@ export default function QuotationGenerator() {
                           type="number"
                           value={item.unit_rate}
                           onChange={(e) => handleItemChange(index, 'unit_rate', e.target.value)}
-                          className="text-base text-right"
+                          className="text-base text-right min-w-[100px]"
                         />
                       </TableCell>
                       <TableCell>
@@ -602,7 +602,7 @@ export default function QuotationGenerator() {
                           onChange={(e) => handleItemChange(index, 'discount_percent', e.target.value)}
                           min="0"
                           max="100"
-                          className="text-base text-right"
+                          className="text-base text-right min-w-[80px]"
                         />
                       </TableCell>
                       <TableCell className="text-right font-medium">₹{item.discounted_value.toFixed(2)}</TableCell>
@@ -611,7 +611,7 @@ export default function QuotationGenerator() {
                           type="number"
                           value={item.gst_percent}
                           onChange={(e) => handleItemChange(index, 'gst_percent', e.target.value)}
-                          className="text-base text-right"
+                          className="text-base text-right min-w-[80px]"
                         />
                       </TableCell>
                       <TableCell className="text-right font-medium">₹{item.gst_value.toFixed(2)}</TableCell>
@@ -621,7 +621,7 @@ export default function QuotationGenerator() {
                           type="text"
                           value={item.lead_time}
                           onChange={(e) => handleItemChange(index, 'lead_time', e.target.value)}
-                          className="text-base"
+                          className="text-base min-w-[100px]"
                         />
                       </TableCell>
                       <TableCell>
@@ -629,7 +629,7 @@ export default function QuotationGenerator() {
                           type="text"
                           value={item.make}
                           onChange={(e) => handleItemChange(index, 'make', e.target.value)}
-                          className="text-base"
+                          className="text-base min-w-[100px]"
                         />
                       </TableCell>
                       <TableCell>
