@@ -14,17 +14,62 @@ import {
   Footer,
   ShadingType,
   PageOrientation,
-  PageNumberFormat,
   convertInchesToTwip,
   LevelFormat,
   NumberFormat,
   ITableCellMarginOptions,
-  VerticalAlign
+  VerticalAlign,
+  ImageRun
 } from 'docx';
 import { saveAs } from "file-saver";
 import { QuotationData } from '../types/quotation-generator';
 import { format, parse } from "date-fns";
 import { Packer } from "docx";
+
+// Enhanced color scheme
+const COLORS = {
+  primary: "2B579A",    // Professional blue
+  secondary: "4472C4",  // Lighter blue for accents
+  accent: "70AD47",     // Green for positive values
+  warning: "C00000",    // Red for important notices
+  light: "F2F2F2",      // Light gray for alternating rows
+  border: "E0E0E0"      // Border color
+};
+
+// Common styles
+const STYLES = {
+  fonts: {
+    header: { name: 'Calibri', size: 28, bold: true },
+    subHeader: { name: 'Calibri', size: 24 },
+    normal: { name: 'Calibri', size: 22 },
+    small: { name: 'Calibri', size: 20 }
+  },
+  spacing: {
+    small: 150,
+    normal: 200,
+    large: 300
+  },
+  borders: {
+    default: {
+      top: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+      bottom: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+      left: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+      right: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border }
+    },
+    none: {
+      top: { style: BorderStyle.NONE },
+      bottom: { style: BorderStyle.NONE },
+      left: { style: BorderStyle.NONE },
+      right: { style: BorderStyle.NONE }
+    }
+  },
+  cellMargin: {
+    top: convertInchesToTwip(0.1),
+    bottom: convertInchesToTwip(0.1),
+    left: convertInchesToTwip(0.1),
+    right: convertInchesToTwip(0.1)
+  } as ITableCellMarginOptions
+};
 
 const formatCurrency = (amount: number | string): string => {
   const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
@@ -45,46 +90,6 @@ const formatDate = (dateStr: string): string => {
   }
 };
 
-// Common styles
-const STYLES = {
-  fonts: {
-    header: { name: 'Arial', size: 28 },
-    subHeader: { name: 'Arial', size: 24 },
-    normal: { name: 'Arial', size: 22 },
-    small: { name: 'Arial', size: 20 }
-  },
-  colors: {
-    primary: '2E5A88',
-    secondary: '4A90E2',
-    accent: 'F5F5F5',
-    border: '000000'
-  },
-  spacing: {
-    normal: 300,
-    large: 400
-  },
-  borders: {
-    default: {
-      top: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
-      bottom: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
-      left: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
-      right: { style: BorderStyle.SINGLE, size: 1, color: '000000' }
-    },
-    none: {
-      top: { style: BorderStyle.NONE },
-      bottom: { style: BorderStyle.NONE },
-      left: { style: BorderStyle.NONE },
-      right: { style: BorderStyle.NONE }
-    }
-  },
-  cellMargin: {
-    top: convertInchesToTwip(0.1),
-    bottom: convertInchesToTwip(0.1),
-    left: convertInchesToTwip(0.1),
-    right: convertInchesToTwip(0.1)
-  } as ITableCellMarginOptions
-};
-
 // Helper function to create bordered paragraph
 const createBorderedParagraph = (text: string | TextRun[], options: any = {}) => {
   return new Table({
@@ -100,9 +105,10 @@ const createBorderedParagraph = (text: string | TextRun[], options: any = {}) =>
                 children: typeof text === 'string' 
                   ? [new TextRun({ text, ...STYLES.fonts.normal, ...options })]
                   : text,
-                spacing: { before: STYLES.spacing.normal, after: STYLES.spacing.normal }
+                alignment: options.alignment || AlignmentType.LEFT
               })
-            ]
+            ],
+            margins: STYLES.cellMargin
           })
         ]
       })
@@ -110,353 +116,233 @@ const createBorderedParagraph = (text: string | TextRun[], options: any = {}) =>
   });
 };
 
+// Create header content with company details and logo
+const createHeaderContent = () => {
+  // Create company name paragraph
+  const companyNameParagraph = new Paragraph({
+    children: [
+      new TextRun({
+        text: "BOLT INDIA PVT LTD",
+        bold: true,
+        size: 28,
+        color: "2B579A",
+      }),
+    ],
+  });
+
+  // Create address paragraph
+  const addressParagraph = new Paragraph({
+    children: [
+      new TextRun({
+        text: "123 Business Park, Sector 5\n",
+        size: 20,
+        color: "666666",
+      }),
+      new TextRun({
+        text: "Mumbai, Maharashtra 400001",
+        size: 20,
+        color: "666666",
+      }),
+    ],
+  });
+
+  // Create contact paragraph
+  const contactParagraph = new Paragraph({
+    children: [
+      new TextRun({
+        text: "Phone: +91 22 1234 5678\n",
+        size: 20,
+        color: "666666",
+      }),
+      new TextRun({
+        text: "Email: info@boltindia.com\n",
+        size: 20,
+        color: "666666",
+      }),
+      new TextRun({
+        text: "GST: 27AABCU9603R1ZX",
+        size: 20,
+        color: "666666",
+      }),
+    ],
+  });
+
+  // Create logo paragraph
+  const logoParagraph = new Paragraph({
+    alignment: AlignmentType.CENTER,
+    children: [
+      new TextRun({
+        text: "BOLT",
+        bold: true,
+        size: 48,
+        color: "2B579A",
+      }),
+    ],
+  });
+
+  // Create cells with their content
+  const companyCell = new TableCell({
+    children: [companyNameParagraph, addressParagraph, contactParagraph],
+    width: {
+      size: 70,
+      type: WidthType.PERCENTAGE,
+    },
+    margins: {
+      top: 120,
+      bottom: 120,
+      left: 240,
+      right: 240,
+    },
+    shading: {
+      fill: "F8F9FA",
+      type: ShadingType.CLEAR,
+    },
+    verticalAlign: VerticalAlign.CENTER,
+    borders: {
+      top: { style: BorderStyle.SINGLE, size: 1, color: "E0E0E0" },
+      bottom: { style: BorderStyle.SINGLE, size: 1, color: "E0E0E0" },
+      left: { style: BorderStyle.SINGLE, size: 1, color: "E0E0E0" },
+      right: { style: BorderStyle.SINGLE, size: 1, color: "E0E0E0" },
+    },
+  });
+
+  const logoCell = new TableCell({
+    children: [logoParagraph],
+    width: {
+      size: 30,
+      type: WidthType.PERCENTAGE,
+    },
+    margins: {
+      top: 120,
+      bottom: 120,
+      left: 240,
+      right: 240,
+    },
+    shading: {
+      fill: "F8F9FA",
+      type: ShadingType.CLEAR,
+    },
+    verticalAlign: VerticalAlign.CENTER,
+  });
+
+  // Create the table with cells
+  const table = new Table({
+    rows: [
+      new TableRow({
+        children: [companyCell, logoCell],
+      }),
+    ],
+    width: {
+      size: 100,
+      type: WidthType.PERCENTAGE,
+    },
+  });
+
+  return table;
+};
+
+// Create footer with page numbers
+const createFooterContent = () => {
+  return new Paragraph({
+    alignment: AlignmentType.CENTER,
+    children: [
+      new TextRun({
+        text: "Page ",
+        ...STYLES.fonts.small
+      }),
+      new TextRun({
+        children: [PageNumber.CURRENT],
+        ...STYLES.fonts.small
+      }),
+      new TextRun({
+        text: " of ",
+        ...STYLES.fonts.small
+      }),
+      new TextRun({
+        children: [PageNumber.TOTAL_PAGES],
+        ...STYLES.fonts.small
+      })
+    ]
+  });
+};
+
+// Create quotation title section
+const createQuotationTitle = (reference: string, date: string) => {
+  return [
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { before: STYLES.spacing.normal, after: STYLES.spacing.normal },
+      children: [
+        new TextRun({ 
+          text: 'QUOTATION',
+          bold: true,
+          ...STYLES.fonts.header
+        })
+      ]
+    }),
+    new Paragraph({
+      spacing: { before: STYLES.spacing.normal, after: STYLES.spacing.normal },
+      children: [
+        new TextRun({ 
+          text: `Ref No: ${reference}`,
+          ...STYLES.fonts.normal
+        }),
+        new TextRun({ 
+          text: `\tDate: ${formatDate(date)}`,
+          ...STYLES.fonts.normal
+        })
+      ]
+    })
+  ];
+};
+
 export const generateWord = async (data: QuotationData) => {
   const doc = new Document({
+    styles: {
+      default: {
+        document: {
+          run: {
+            font: "Calibri",
+            size: 24,
+            color: "333333"
+          },
+          paragraph: {
+            spacing: { line: 276, before: 20 * 72 * 0.05, after: 20 * 72 * 0.05 },
+          },
+        },
+      },
+    },
     sections: [{
       properties: {
         page: {
           margin: {
-            top: convertInchesToTwip(1),
-            right: convertInchesToTwip(1),
-            bottom: convertInchesToTwip(1),
-            left: convertInchesToTwip(1),
+            top: 1440,
+            right: 1440,
+            bottom: 1440,
+            left: 1440,
           },
-          orientation: PageOrientation.PORTRAIT
-        }
+        },
       },
       headers: {
         default: new Header({
-          children: [
-            new Table({
-              width: {
-                size: 100,
-                type: WidthType.PERCENTAGE,
-              },
-              borders: {
-                top: { style: BorderStyle.NONE },
-                bottom: { style: BorderStyle.NONE },
-                left: { style: BorderStyle.NONE },
-                right: { style: BorderStyle.NONE },
-                insideHorizontal: { style: BorderStyle.NONE },
-                insideVertical: { style: BorderStyle.NONE },
-              },
-              rows: [
-                new TableRow({
-                  children: [
-                    // Center column with company details
-                    new TableCell({
-                      width: {
-                        size: 100,
-                        type: WidthType.PERCENTAGE,
-                      },
-                      children: [
-                        new Paragraph({
-                          alignment: AlignmentType.CENTER,
-                          spacing: { before: 200, after: 200 },
-                          children: [
-                            new TextRun({
-                              text: "CHEMBIO LIFESCIENCES",
-                              bold: true,
-                              size: 28,
-                              font: "Arial",
-                            }),
-                          ],
-                        }),
-                        new Paragraph({
-                          alignment: AlignmentType.CENTER,
-                          children: [
-                            new TextRun({
-                              text: "L-10, Himalaya Legend, Nyay Khand-1",
-                              size: 24,
-                              font: "Arial",
-                            }),
-                          ],
-                        }),
-                        new Paragraph({
-                          alignment: AlignmentType.CENTER,
-                          children: [
-                            new TextRun({
-                              text: "Indirapuram, Ghaziabad - 201014",
-                              size: 24,
-                              font: "Arial",
-                            }),
-                          ],
-                        }),
-                        new Paragraph({
-                          alignment: AlignmentType.CENTER,
-                          children: [
-                            new TextRun({
-                              text: "Email:- sales.chembio@gmail.com",
-                              size: 24,
-                              font: "Arial",
-                            }),
-                          ],
-                        }),
-                        new Paragraph({
-                          alignment: AlignmentType.CENTER,
-                          children: [
-                            new TextRun({
-                              text: "0120-4909400",
-                              size: 24,
-                              font: "Arial",
-                            }),
-                          ],
-                        }),
-                        new Paragraph({
-                          alignment: AlignmentType.CENTER,
-                          children: [
-                            new TextRun({
-                              text: "PAN NO.: AALFC0922C | GST NO.: 09AALFC0922C1ZU",
-                              size: 24,
-                              font: "Arial",
-                            }),
-                          ],
-                        }),
-                      ],
-                    }),
-                  ],
-                }),
-              ],
-            }),
-            new Paragraph({
-              alignment: AlignmentType.RIGHT,
-              children: [
-                new TextRun({
-                  text: "Page ",
-                  ...STYLES.fonts.small
-                }),
-                new TextRun({
-                  children: [PageNumber.CURRENT],
-                  ...STYLES.fonts.small
-                }),
-                new TextRun({
-                  text: " of ",
-                  ...STYLES.fonts.small
-                }),
-                new TextRun({
-                  children: [PageNumber.TOTAL_PAGES],
-                  ...STYLES.fonts.small
-                })
-              ]
-            })
-          ]
+          children: [createHeaderContent()]
         })
       },
       footers: {
         default: new Footer({
-          children: [
-            new Paragraph({
-              alignment: AlignmentType.CENTER,
-              children: [
-                new TextRun({
-                  text: `${data.billFrom.name} - ${data.billFrom.address}`,
-                  ...STYLES.fonts.small
-                })
-              ]
-            }),
-            new Paragraph({
-              alignment: AlignmentType.CENTER,
-              children: [
-                new TextRun({
-                  text: `Tel: ${data.billFrom.phone} | Email: ${data.billFrom.email}`,
-                  ...STYLES.fonts.small
-                })
-              ]
-            })
-          ]
+          children: [createFooterContent()]
         })
       },
       children: [
-        // Company Header with background
-        new Table({
-          width: {
-            size: 100,
-            type: WidthType.PERCENTAGE,
-          },
-          borders: STYLES.borders.none,
-          rows: [
-            new TableRow({
-              children: [
-                new TableCell({
-                  borders: STYLES.borders.none,
-                  shading: {
-                    fill: STYLES.colors.primary,
-                    type: ShadingType.CLEAR,
-                    color: "auto"
-                  },
-                  children: [
-                    new Paragraph({
-                      alignment: AlignmentType.CENTER,
-                      spacing: { before: 200, after: 100 },
-                      children: [
-                        new TextRun({
-                          text: "CHEMBIO LIFESCIENCES",
-                          bold: true,
-                          size: 28,
-                          font: "Arial",
-                          color: "FFFFFF",
-                        }),
-                      ],
-                    }),
-                    new Paragraph({
-                      alignment: AlignmentType.CENTER,
-                      spacing: { before: 100, after: 100 },
-                      children: [
-                        new TextRun({
-                          text: "L-10, Himalaya Legend, Nyay Khand-1",
-                          size: 24,
-                          font: "Arial",
-                          color: "FFFFFF",
-                        }),
-                      ],
-                    }),
-                    new Paragraph({
-                      alignment: AlignmentType.CENTER,
-                      spacing: { before: 100, after: 100 },
-                      children: [
-                        new TextRun({
-                          text: "Indirapuram, Ghaziabad - 201014",
-                          size: 24,
-                          font: "Arial",
-                          color: "FFFFFF",
-                        }),
-                      ],
-                    }),
-                    new Paragraph({
-                      alignment: AlignmentType.CENTER,
-                      spacing: { before: 100, after: 100 },
-                      children: [
-                        new TextRun({
-                          text: "Email:- sales.chembio@gmail.com",
-                          size: 24,
-                          font: "Arial",
-                          color: "FFFFFF",
-                        }),
-                      ],
-                    }),
-                    new Paragraph({
-                      alignment: AlignmentType.CENTER,
-                      spacing: { before: 100, after: 100 },
-                      children: [
-                        new TextRun({
-                          text: "0120-4909400",
-                          size: 24,
-                          font: "Arial",
-                          color: "FFFFFF",
-                        }),
-                      ],
-                    }),
-                    new Paragraph({
-                      alignment: AlignmentType.CENTER,
-                      spacing: { before: 100, after: 200 },
-                      children: [
-                        new TextRun({
-                          text: "PAN NO.: AALFC0922C | GST NO.: 09AALFC0922C1ZU",
-                          size: 24,
-                          font: "Arial",
-                          color: "FFFFFF",
-                        }),
-                      ],
-                    }),
-                  ],
-                }),
-              ],
-            }),
-          ],
-        }),
-
-        // Add some space after the header
-        new Paragraph({
-          spacing: { before: 300, after: 300 },
-          children: [new TextRun({ text: "" })]
-        }),
-
-        // Quotation Title
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          spacing: { before: STYLES.spacing.large, after: STYLES.spacing.large },
-          children: [
-            new TextRun({ 
-              text: 'QUOTATION',
-              bold: true,
-              ...STYLES.fonts.header
-            })
-          ]
-        }),
-
-        // Reference and Date
-        new Paragraph({
-          children: [
-            new TextRun({ 
-              text: `Ref No: ${data.quotationRef}`,
-              ...STYLES.fonts.normal
-            }),
-            new TextRun({ 
-              text: `\tDate: ${formatDate(data.quotationDate)}`,
-              ...STYLES.fonts.normal
-            })
-          ]
-        }),
+        ...createQuotationTitle(data.quotationRef, data.quotationDate),
+        createBorderedParagraph([
+          new TextRun({ text: 'To:\n', bold: true, ...STYLES.fonts.normal }),
+          new TextRun({ text: data.billTo.name + '\n', ...STYLES.fonts.normal }),
+          new TextRun({ text: data.billTo.address + '\n', ...STYLES.fonts.normal }),
+          new TextRun({ text: `Kind Attn: ${data.billTo.name}\n`, ...STYLES.fonts.normal }),
+          new TextRun({ text: `Tel: ${data.billTo.phone} | Email: ${data.billTo.email}`, ...STYLES.fonts.normal })
+        ]),
         new Paragraph({ text: '' }),
-
-        // Client Details Box
-        new Table({
-          width: { size: 100, type: WidthType.PERCENTAGE },
-          borders: STYLES.borders.default,
-          rows: [
-            new TableRow({
-              children: [
-                new TableCell({
-                  children: [
-                    new Paragraph({
-                      children: [
-                        new TextRun({ 
-                          text: 'To:',
-                          bold: true,
-                          ...STYLES.fonts.normal
-                        })
-                      ]
-                    }),
-                    new Paragraph({
-                      children: [
-                        new TextRun({ 
-                          text: data.billTo.name,
-                          ...STYLES.fonts.normal
-                        })
-                      ]
-                    }),
-                    new Paragraph({
-                      children: [
-                        new TextRun({ 
-                          text: data.billTo.address,
-                          ...STYLES.fonts.normal
-                        })
-                      ]
-                    }),
-                    new Paragraph({
-                      children: [
-                        new TextRun({ 
-                          text: `Kind Attn: ${data.billTo.name}`,
-                          ...STYLES.fonts.normal
-                        })
-                      ]
-                    }),
-                    new Paragraph({
-                      children: [
-                        new TextRun({ 
-                          text: `Tel: ${data.billTo.phone} | Email: ${data.billTo.email}`,
-                          ...STYLES.fonts.normal
-                        })
-                      ]
-                    })
-                  ]
-                })
-              ]
-            })
-          ]
-        }),
-        new Paragraph({ text: '' }),
-
         // Items Table with alternating colors
         new Table({
           width: { size: 100, type: WidthType.PERCENTAGE },
@@ -473,42 +359,50 @@ export const generateWord = async (data: QuotationData) => {
                 // Define column widths based on content type
                 let columnWidth = 8; // default width
                 switch(header) {
-                  case 'Description':
-                    columnWidth = 22;
-                    break;
                   case 'S.No':
-                    columnWidth = 4;
-                    break;
-                  case 'HSN Code':
-                    columnWidth = 7;
+                    columnWidth = 3;  // Smaller width for S.No
                     break;
                   case 'Cat No.':
-                    columnWidth = 6;
+                    columnWidth = 5;  // Slightly wider for Cat No.
+                    break;
+                  case 'Description':
+                    columnWidth = 25; // Much wider for Description
                     break;
                   case 'Pack Size':
-                    columnWidth = 6;
+                    columnWidth = 5;  // Medium width for Pack Size
+                    break;
+                  case 'HSN Code':
+                    columnWidth = 6;  // Medium width for HSN Code
                     break;
                   case 'Qty':
-                    columnWidth = 4;
-                    break;
-                  case 'GST %':
-                  case 'Discount %':
-                    columnWidth = 2;
+                    columnWidth = 3;  // Small width for Qty
                     break;
                   case 'Unit Rate':
-                  case 'GST Value':
+                    columnWidth = 8;  // Wider for monetary values
+                    break;
+                  case 'Discount %':
+                    columnWidth = 5;  // Small width for percentage
+                    break;
                   case 'Discounted Price':
+                    columnWidth = 8;  // Wider for monetary values
+                    break;
                   case 'Expanded Price':
-                    columnWidth = 6;
+                    columnWidth = 8;  // Wider for monetary values
+                    break;
+                  case 'GST %':
+                    columnWidth = 4;  // Small width for percentage
+                    break;
+                  case 'GST Value':
+                    columnWidth = 4;  // Reduced width for GST Value
                     break;
                   case 'Total':
-                    columnWidth = 11;
+                    columnWidth = 6;  // Reduced width for Total
                     break;
                   case 'Lead Time':
-                    columnWidth = 11;
+                    columnWidth = 8;  // Increased width for lead time
                     break;
                   case 'Make':
-                    columnWidth = 15;
+                    columnWidth = 7;  // Increased width for make
                     break;
                 }
 
@@ -517,7 +411,7 @@ export const generateWord = async (data: QuotationData) => {
 
                 return new TableCell({
                   shading: {
-                    fill: STYLES.colors.primary,
+                    fill: COLORS.primary,
                     type: ShadingType.CLEAR,
                     color: "auto"
                   },
@@ -575,21 +469,23 @@ export const generateWord = async (data: QuotationData) => {
                   
                   return new TableCell({
                     shading: {
-                      fill: index % 2 === 0 ? STYLES.colors.accent : "FFFFFF",
+                      fill: index % 2 === 0 ? COLORS.light : "FFFFFF",
                       type: ShadingType.CLEAR,
                       color: "auto"
                     },
                     width: {
-                      size: colIndex === 2 ? 22 : // Description
-                            colIndex === 0 ? 4 :  // S.No
-                            colIndex === 4 ? 7 :  // HSN Code
-                            [1, 3].includes(colIndex) ? 6 :  // Cat No., Pack Size
-                            colIndex === 5 ? 4 :  // Qty
-                            [7, 10].includes(colIndex) ? 2 :  // Discount %, GST %
-                            [6, 8, 9, 11].includes(colIndex) ? 6 :  // Unit Rate, Discounted Price, Expanded Price, GST Value
-                            colIndex === 12 ? 11 :  // Total
-                            colIndex === 13 ? 11 :  // Lead Time
-                            colIndex === 14 ? 15 : 6,  // Make
+                      size: colIndex === 2 ? 25 : // Description
+                            colIndex === 0 ? 3 :  // S.No
+                            colIndex === 1 ? 5 :  // Cat No.
+                            colIndex === 3 ? 5 :  // Pack Size
+                            colIndex === 4 ? 6 :  // HSN Code
+                            colIndex === 5 ? 3 :  // Qty
+                            [6, 8, 9].includes(colIndex) ? 8 :  // Unit Rate, Discounted Price, Expanded Price
+                            [7, 10].includes(colIndex) ? 5 :  // Discount %, GST %
+                            colIndex === 11 ? 4 :  // GST Value
+                            colIndex === 12 ? 6 :  // Total
+                            colIndex === 13 ? 8 :  // Lead Time
+                            colIndex === 14 ? 7 : 8,  // Make
                       type: WidthType.PERCENTAGE
                     },
                     verticalAlign: "center",
