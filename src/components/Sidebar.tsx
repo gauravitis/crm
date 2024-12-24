@@ -30,6 +30,7 @@ export default function Sidebar({ isCollapsed, onCollapse, isMobile }: SidebarPr
     { name: 'Vendors', icon: Users, path: '/vendors' },
     { name: 'Quotations', icon: FileText, path: '/quotations' },
     { name: 'Quotation Generator', icon: FileInput, path: '/quotation-generator' },
+    { name: 'Pending Orders', icon: ShoppingCart, path: '/pending-orders' },
     { name: 'Sales', icon: ShoppingCart, path: '/sales' },
   ];
 

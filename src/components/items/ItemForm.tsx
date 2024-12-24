@@ -51,6 +51,19 @@ export default function ItemForm({ onSubmit, onCancel, initialData }: ItemFormPr
             </div>
 
             <div className="space-y-4">
+              <Label htmlFor="casNumber" className="text-base font-medium">CAS Number</Label>
+              <Input
+                id="casNumber"
+                {...register('casNumber', { required: 'CAS Number is required' })}
+                placeholder="CAS Number"
+                className={`h-12 text-lg ${errors.casNumber ? 'border-red-500' : ''}`}
+              />
+              {errors.casNumber && (
+                <p className="text-sm text-red-500">{errors.casNumber.message as string}</p>
+              )}
+            </div>
+
+            <div className="space-y-4">
               <Label htmlFor="sku" className="text-base font-medium">CAS</Label>
               <Input
                 id="sku"
