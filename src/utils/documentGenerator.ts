@@ -25,6 +25,7 @@ import { saveAs } from "file-saver";
 import { QuotationData } from '../types/quotation-generator';
 import { format, parse } from "date-fns";
 import { Packer } from "docx";
+import signatureImage from '../assets/authorised-signature.jpg';
 
 // Enhanced color scheme
 const COLORS = {
@@ -118,118 +119,112 @@ const createBorderedParagraph = (text: string | TextRun[], options: any = {}) =>
 
 // Create header content with company details and logo
 const createHeaderContent = () => {
+  const headerTextStyle = {
+    ...STYLES.fonts.normal,
+    color: "FFFFFF",  // White color for text
+    size: 24,
+  };
+
+  const headerTitleStyle = {
+    ...headerTextStyle,
+    size: 32,
+    bold: true,
+  };
+
   // Create company name paragraph
   const companyNameParagraph = new Paragraph({
     children: [
       new TextRun({
-        text: "BOLT INDIA PVT LTD",
-        bold: true,
-        size: 28,
-        color: "2B579A",
+        text: "CHEMBIO LIFESCIENCES",
+        ...headerTitleStyle,
       }),
     ],
+    alignment: AlignmentType.CENTER,
+    spacing: {
+      after: 200,
+    },
   });
 
   // Create address paragraph
   const addressParagraph = new Paragraph({
     children: [
       new TextRun({
-        text: "123 Business Park, Sector 5\n",
-        size: 20,
-        color: "666666",
+        text: "L-10, Himalaya Legend, Nyay Khand-1\n",
+        ...headerTextStyle,
       }),
       new TextRun({
-        text: "Mumbai, Maharashtra 400001",
-        size: 20,
-        color: "666666",
+        text: "Indirapuram, Ghaziabad - 201014",
+        ...headerTextStyle,
       }),
     ],
+    alignment: AlignmentType.CENTER,
+    spacing: {
+      after: 200,
+    },
   });
 
   // Create contact paragraph
   const contactParagraph = new Paragraph({
     children: [
       new TextRun({
-        text: "Phone: +91 22 1234 5678\n",
-        size: 20,
-        color: "666666",
+        text: "Email:- sales.chembio@gmail.com\n",
+        ...headerTextStyle,
       }),
       new TextRun({
-        text: "Email: info@boltindia.com\n",
-        size: 20,
-        color: "666666",
-      }),
-      new TextRun({
-        text: "GST: 27AABCU9603R1ZX",
-        size: 20,
-        color: "666666",
+        text: "0120-4909400",
+        ...headerTextStyle,
       }),
     ],
+    alignment: AlignmentType.CENTER,
+    spacing: {
+      after: 200,
+    },
   });
 
-  // Create logo paragraph
-  const logoParagraph = new Paragraph({
-    alignment: AlignmentType.CENTER,
+  // Create GST and PAN paragraph
+  const gstPanParagraph = new Paragraph({
     children: [
       new TextRun({
-        text: "BOLT",
-        bold: true,
-        size: 48,
-        color: "2B579A",
+        text: "PAN NO.: AALFC0922C | GST NO.: 09AALFC0922C1ZU",
+        ...headerTextStyle,
       }),
     ],
-  });
-
-  // Create cells with their content
-  const companyCell = new TableCell({
-    children: [companyNameParagraph, addressParagraph, contactParagraph],
-    width: {
-      size: 70,
-      type: WidthType.PERCENTAGE,
+    alignment: AlignmentType.CENTER,
+    spacing: {
+      after: 200,
     },
-    margins: {
-      top: 120,
-      bottom: 120,
-      left: 240,
-      right: 240,
-    },
-    shading: {
-      fill: "F8F9FA",
-      type: ShadingType.CLEAR,
-    },
-    verticalAlign: VerticalAlign.CENTER,
-    borders: {
-      top: { style: BorderStyle.SINGLE, size: 1, color: "E0E0E0" },
-      bottom: { style: BorderStyle.SINGLE, size: 1, color: "E0E0E0" },
-      left: { style: BorderStyle.SINGLE, size: 1, color: "E0E0E0" },
-      right: { style: BorderStyle.SINGLE, size: 1, color: "E0E0E0" },
-    },
-  });
-
-  const logoCell = new TableCell({
-    children: [logoParagraph],
-    width: {
-      size: 30,
-      type: WidthType.PERCENTAGE,
-    },
-    margins: {
-      top: 120,
-      bottom: 120,
-      left: 240,
-      right: 240,
-    },
-    shading: {
-      fill: "F8F9FA",
-      type: ShadingType.CLEAR,
-    },
-    verticalAlign: VerticalAlign.CENTER,
   });
 
   // Create the table with cells
   const table = new Table({
     rows: [
       new TableRow({
-        children: [companyCell, logoCell],
+        children: [
+          new TableCell({
+            children: [
+              companyNameParagraph,
+              addressParagraph,
+              contactParagraph,
+              gstPanParagraph,
+            ],
+            shading: {
+              fill: COLORS.primary,
+              type: ShadingType.CLEAR,
+            },
+            margins: {
+              top: 200,
+              bottom: 200,
+              left: 200,
+              right: 200,
+            },
+            borders: {
+              top: { style: BorderStyle.NONE },
+              bottom: { style: BorderStyle.NONE },
+              left: { style: BorderStyle.NONE },
+              right: { style: BorderStyle.NONE },
+            },
+          }),
+        ],
       }),
     ],
     width: {
@@ -296,21 +291,90 @@ const createQuotationTitle = (reference: string, date: string) => {
   ];
 };
 
+// Function to convert base64 to Uint8Array
+const base64ToUint8Array = (base64: string): Uint8Array => {
+  const binaryString = window.atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
+};
+
+// Function to convert image URL to Uint8Array
+const getImageAsUint8Array = async (url: string): Promise<Uint8Array> => {
+  const response = await fetch(url);
+  const blob = await response.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        const base64Data = reader.result.split(',')[1];
+        resolve(base64ToUint8Array(base64Data));
+      } else {
+        reject(new Error('Failed to convert image'));
+      }
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+};
+
+// Create signature section
+const createSignatureSection = () => {
+  return [
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: "For CHEMBIO LIFESCIENCE",
+          ...STYLES.fonts.normal,
+          bold: true,
+        }),
+      ],
+      alignment: AlignmentType.RIGHT,
+      spacing: {
+        after: 200,
+      },
+    }),
+    // Add empty paragraphs for signature space
+    new Paragraph({
+      text: "",
+      spacing: {
+        before: 300,
+        after: 300,
+      },
+    }),
+    new Paragraph({
+      text: "",
+      spacing: {
+        before: 300,
+        after: 300,
+      },
+    }),
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: "Authorised Signatory",
+          ...STYLES.fonts.normal,
+          bold: true,
+        }),
+      ],
+      alignment: AlignmentType.RIGHT,
+    }),
+  ];
+};
+
 export const generateWord = async (data: QuotationData) => {
   const doc = new Document({
     styles: {
       default: {
         document: {
           run: {
-            font: "Calibri",
-            size: 24,
-            color: "333333"
-          },
-          paragraph: {
-            spacing: { line: 276, before: 20 * 72 * 0.05, after: 20 * 72 * 0.05 },
-          },
-        },
-      },
+            font: STYLES.fonts.normal.name,
+            size: STYLES.fonts.normal.size,
+          }
+        }
+      }
     },
     sections: [{
       properties: {
@@ -323,17 +387,25 @@ export const generateWord = async (data: QuotationData) => {
           },
         },
       },
-      headers: {
-        default: new Header({
-          children: [createHeaderContent()]
-        })
-      },
       footers: {
         default: new Footer({
           children: [createFooterContent()]
         })
       },
       children: [
+        createHeaderContent(),
+        new Paragraph({
+          text: "QUOTATION",
+          alignment: AlignmentType.CENTER,
+          spacing: {
+            before: 400,
+            after: 400,
+          },
+          style: {
+            ...STYLES.fonts.header,
+            size: 32,
+          }
+        }),
         ...createQuotationTitle(data.quotationRef, data.quotationDate),
         createBorderedParagraph([
           new TextRun({ text: 'To:\n', bold: true, ...STYLES.fonts.normal }),
@@ -421,7 +493,11 @@ export const generateWord = async (data: QuotationData) => {
                   },
                   children: [
                     new Paragraph({
-                      alignment: AlignmentType.CENTER,  // Center align all headers
+                      alignment: shouldCenter
+                        ? AlignmentType.CENTER
+                        : [6, 8, 9, 11, 12].includes(index)  // Monetary values
+                          ? AlignmentType.RIGHT
+                          : AlignmentType.LEFT,
                       children: [
                         new TextRun({ 
                           text: header,
@@ -581,74 +657,14 @@ export const generateWord = async (data: QuotationData) => {
 
         // Terms & Conditions
         createBorderedParagraph([
-          new TextRun({ text: 'Terms & Conditions\n', bold: true, ...STYLES.fonts.normal }),
-          new TextRun({ text: `1. Payment Terms: ${data.paymentTerms}\n`, ...STYLES.fonts.normal }),
-          new TextRun({ text: `2. Validity: ${formatDate(data.validTill)}\n`, ...STYLES.fonts.normal }),
-          new TextRun({ text: '3. Prices are Ex-Works unless specified otherwise\n', ...STYLES.fonts.normal }),
-          new TextRun({ text: '4. Delivery: As per mentioned lead time\n', ...STYLES.fonts.normal }),
-          new TextRun({ text: '5. Please check specifications before order\n', ...STYLES.fonts.normal }),
-          new TextRun({ text: '6. GST will be charged extra as applicable\n', ...STYLES.fonts.normal }),
-          new TextRun({ text: '7. Subject to jurisdiction\n', ...STYLES.fonts.normal })
+          new TextRun({ text: 'Terms & Conditions ', bold: true, ...STYLES.fonts.normal }),
+          new TextRun({ text: data.termsAndConditions, ...STYLES.fonts.normal })
         ]),
-        new Paragraph({ text: '' }),
 
-        // Notes if any
-        ...(data.notes ? [
-          createBorderedParagraph([
-            new TextRun({ text: 'Notes:\n', bold: true, ...STYLES.fonts.normal }),
-            new TextRun({ text: data.notes, ...STYLES.fonts.normal })
-          ]),
-          new Paragraph({ text: '' })
-        ] : []),
+        new Paragraph({ text: '' }),  // Add some space
 
-        // Signature Block
-        new Table({
-          width: { size: 100, type: WidthType.PERCENTAGE },
-          borders: {
-            top: { style: BorderStyle.NONE },
-            bottom: { style: BorderStyle.NONE },
-            left: { style: BorderStyle.NONE },
-            right: { style: BorderStyle.NONE }
-          },
-          rows: [
-            new TableRow({
-              children: [
-                new TableCell({
-                  borders: {
-                    top: { style: BorderStyle.NONE },
-                    bottom: { style: BorderStyle.NONE },
-                    left: { style: BorderStyle.NONE },
-                    right: { style: BorderStyle.NONE }
-                  },
-                  children: [
-                    new Paragraph({ text: '' }),
-                    new Paragraph({ text: '' }),
-                    new Paragraph({
-                      children: [
-                        new TextRun({ 
-                          text: 'For ' + data.billFrom.name,
-                          bold: true,
-                          ...STYLES.fonts.normal
-                        })
-                      ]
-                    }),
-                    new Paragraph({ text: '' }),
-                    new Paragraph({ text: '' }),
-                    new Paragraph({ text: '' }),
-                    new Paragraph({
-                      children: [
-                        new TextRun({ 
-                          text: 'Authorized Signatory',
-                          ...STYLES.fonts.normal
-                        })
-                      ]
-                    })
-                  ]
-                })
-              ]
-            })
-          ]
-        })
+        // Add signature section
+        ...createSignatureSection(),
       ]
     }]
   });
