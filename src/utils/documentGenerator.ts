@@ -25,7 +25,6 @@ import { saveAs } from "file-saver";
 import { QuotationData } from '../types/quotation-generator';
 import { format, parse } from "date-fns";
 import { Packer } from "docx";
-import signatureImage from '../assets/authorised-signature.jpg';
 
 // Enhanced color scheme
 const COLORS = {
@@ -301,25 +300,6 @@ const base64ToUint8Array = (base64: string): Uint8Array => {
   return bytes;
 };
 
-// Function to convert image URL to Uint8Array
-const getImageAsUint8Array = async (url: string): Promise<Uint8Array> => {
-  const response = await fetch(url);
-  const blob = await response.blob();
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result === 'string') {
-        const base64Data = reader.result.split(',')[1];
-        resolve(base64ToUint8Array(base64Data));
-      } else {
-        reject(new Error('Failed to convert image'));
-      }
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-};
-
 // Create signature section
 const createSignatureSection = () => {
   return [
@@ -365,6 +345,9 @@ const createSignatureSection = () => {
 };
 
 export const generateWord = async (data: QuotationData) => {
+  // Get signature section first
+  const signatureSection = createSignatureSection();
+  
   const doc = new Document({
     styles: {
       default: {
@@ -664,7 +647,7 @@ export const generateWord = async (data: QuotationData) => {
         new Paragraph({ text: '' }),  // Add some space
 
         // Add signature section
-        ...createSignatureSection(),
+        ...signatureSection,
       ]
     }]
   });
