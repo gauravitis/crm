@@ -97,7 +97,15 @@ export default function QuotationDetails({ quotation, onClose, onSave }: Quotati
       <div>
         <h3 className="text-lg font-medium mb-2">Client Details</h3>
         <p className="text-gray-600">{quotation.billTo?.name || 'N/A'}</p>
-        <p className="text-gray-600">{quotation.billTo?.address || 'N/A'}</p>
+        <p className="text-gray-600">
+          {quotation.billTo?.address && typeof quotation.billTo.address === 'object' 
+            ? `${quotation.billTo.address.street || ''}, 
+               ${quotation.billTo.address.city || ''}, 
+               ${quotation.billTo.address.state || ''} 
+               ${quotation.billTo.address.postalCode || ''}, 
+               ${quotation.billTo.address.country || ''}`.replace(/\s+/g, ' ').trim()
+            : quotation.billTo?.address || 'N/A'}
+        </p>
         <p className="text-gray-600">{quotation.billTo?.phone || 'N/A'}</p>
         <p className="text-gray-600">{quotation.billTo?.email || 'N/A'}</p>
       </div>
