@@ -29,10 +29,20 @@ const STORAGE_KEY = 'quotationData';
 
 // Function to generate reference number
 const generateReferenceNumber = async () => {
-  return await generateQuotationRef();
+  try {
+    console.log('Generating reference number...');
+    const ref = await generateQuotationRef();
+    console.log('Generated reference:', ref, typeof ref);
+    if (typeof ref !== 'string') {
+      console.error('Reference is not a string:', ref);
+      return `CBL-${format(new Date(), 'dd/MM/yyyy')}-ERR`;
+    }
+    return ref;
+  } catch (error) {
+    console.error('Error generating reference number:', error);
+    return `CBL-${format(new Date(), 'dd/MM/yyyy')}-ERR`;
+  }
 };
-
-
 
 const defaultProduct: QuotationProduct = {
   sno: 1,
@@ -54,9 +64,11 @@ const defaultProduct: QuotationProduct = {
 const defaultQuotationData: QuotationData = {
   billTo: {
     name: '',
+    companyName: '', // Add company name field
     address: '',
     phone: '',
     email: '',
+    contactPerson: ''
   },
   billFrom: {
     name: 'CHEMBIO LIFESCIENCES',
@@ -66,9 +78,9 @@ const defaultQuotationData: QuotationData = {
     gst: '09AALFC0922C1ZU',
     pan: 'AALFC0922C',
   },
-  quotationRef: '',
-  quotationDate: new Date().toISOString(),
-  validTill: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+  quotationRef: '',  // Empty string to start
+  quotationDate: format(new Date(), 'dd/MM/yyyy'),  // Format date string consistently
+  validTill: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'dd/MM/yyyy'),  // Format date string consistently
   items: [defaultProduct],
   subTotal: 0,
   tax: 0,
@@ -83,6 +95,7 @@ const defaultQuotationData: QuotationData = {
     microCode: '110240081',
     accountType: 'Current account',
   },
+  document: null
 };
 
 const formatDateForDisplay = (dateStr: string) => {
@@ -124,23 +137,41 @@ export default function QuotationGenerator() {
     if (savedData) {
       return JSON.parse(savedData);
     }
-    return {
-      ...defaultQuotationData,
-      quotationRef: '', // Initialize empty, will be set in useEffect
-    };
+    return defaultQuotationData;
   });
 
   // Set initial reference number
   useEffect(() => {
-    if (!quotationData.quotationRef) {
-      generateReferenceNumber().then(ref => {
-        setQuotationData(prev => ({
-          ...prev,
-          quotationRef: ref
-        }));
-      });
+    const initializeRef = async () => {
+      try {
+        console.log('Initializing reference...');
+        const ref = await generateReferenceNumber();
+        console.log('Setting reference in state:', ref, typeof ref);
+        if (typeof ref === 'string') {
+          setQuotationData(prev => {
+            const updated = {
+              ...prev,
+              quotationRef: ref
+            };
+            console.log('Updated quotation data:', updated.quotationRef, typeof updated.quotationRef);
+            return updated;
+          });
+        } else {
+          console.error('Reference is not a string:', ref);
+        }
+      } catch (error) {
+        console.error('Error initializing reference number:', error);
+      }
+    };
+
+    console.log('Current quotationRef:', quotationData.quotationRef, typeof quotationData.quotationRef);
+    if (!quotationData.quotationRef || 
+        (typeof quotationData.quotationRef === 'string' && quotationData.quotationRef.endsWith('...'))) {
+      console.log('Current quotationRef:', quotationData.quotationRef, typeof quotationData.quotationRef); // Debug log
+      initializeRef();
     }
   }, []);
+
   const [clientSuggestions, setClientSuggestions] = useState<any[]>([]);
   const [itemSuggestions, setItemSuggestions] = useState<any[]>([]);
   const [showClientSuggestions, setShowClientSuggestions] = useState(false);
@@ -215,13 +246,25 @@ export default function QuotationGenerator() {
     updateTotals(newItems);
   };
 
-  const clearData = () => {
-    const newData = {
-      ...defaultQuotationData,
-      quotationRef: generateReferenceNumber(),
-    };
-    localStorage.removeItem(STORAGE_KEY);
-    setQuotationData(newData);
+  const clearData = async () => {
+    try {
+      const ref = await generateReferenceNumber();
+      const newData = {
+        ...defaultQuotationData,
+        quotationRef: ref
+      };
+      localStorage.removeItem(STORAGE_KEY);
+      setQuotationData(newData);
+    } catch (error) {
+      console.error('Error generating reference number:', error);
+      const fallbackRef = `CBL-${format(new Date(), 'dd/MM/yyyy')}-ERR`;
+      const newData = {
+        ...defaultQuotationData,
+        quotationRef: fallbackRef
+      };
+      localStorage.removeItem(STORAGE_KEY);
+      setQuotationData(newData);
+    }
   };
 
   const handleGenerateQuotation = async () => {
@@ -235,16 +278,60 @@ export default function QuotationGenerator() {
         })),
       };
 
-      await generateWord(documentData);
+      const { buffer, filename } = await generateWord(documentData);
+      
+      // Convert buffer to base64 for storage
+      const base64Data = btoa(
+        new Uint8Array(buffer)
+          .reduce((data, byte) => data + String.fromCharCode(byte), '')
+      );
+
+      // Create blob and download
+      const blob = new Blob([buffer], { 
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+
+      // Update quotationData with the document
+      setQuotationData(prev => ({
+        ...prev,
+        document: {
+          filename,
+          data: base64Data
+        }
+      }));
+
       toast.success('Quotation generated successfully!');
+      return { filename, base64Data };
     } catch (error) {
       console.error('Error generating quotation:', error);
       toast.error('Error generating quotation');
+      throw error;
     }
   };
 
   const handleSaveQuotation = async () => {
     try {
+      if (!selectedEmployee) {
+        toast.error('Please select an employee');
+        return;
+      }
+
+      // Generate the document first
+      const { filename, base64Data } = await handleGenerateQuotation();
+
       // Ensure all numeric values are properly converted
       const processedItems = quotationData.items.map(item => ({
         ...item,
@@ -255,18 +342,38 @@ export default function QuotationGenerator() {
         total_price: Number(item.total_price || 0)
       }));
 
+      // Create employee object with only defined fields
+      const employeeData = {
+        id: selectedEmployee.id,
+        name: selectedEmployee.name,
+        ...(selectedEmployee.email && { email: selectedEmployee.email }),
+        ...(selectedEmployee.phone && { phone: selectedEmployee.phone }),
+        ...(selectedEmployee.designation && { designation: selectedEmployee.designation })
+      };
+
       const quotationToSave = {
         ...quotationData,
         items: processedItems,
         subTotal: Number(quotationData.subTotal || 0),
         tax: Number(quotationData.tax || 0),
-        grandTotal: Number(quotationData.grandTotal || 0)
+        grandTotal: Number(quotationData.grandTotal || 0),
+        employee: employeeData,
+        createdAt: format(new Date(), 'dd/MM/yyyy HH:mm:ss'),
+        document: {
+          filename,
+          data: base64Data
+        }
       };
+
+      console.log('Saving quotation with data:', {
+        employee: quotationToSave.employee,
+        document: 'present',
+        createdAt: quotationToSave.createdAt
+      });
       
       await addQuotation(quotationToSave);
       toast.success('Quotation saved successfully!');
-      // Clear the form after successful save
-      clearData();
+      await clearData();
     } catch (error) {
       console.error('Error saving quotation:', error);
       toast.error('Failed to save quotation');
@@ -316,7 +423,7 @@ export default function QuotationGenerator() {
       ...prev,
       billTo: {
         name: client.name || '',
-        company: client.company || '',
+        companyName: client.company || '', // Add company name field
         address: formattedAddress,
         phone: client.phone || '',
         email: client.email || ''
@@ -404,6 +511,19 @@ export default function QuotationGenerator() {
           </CardHeader>
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2 relative">
+                <Label className="text-sm font-medium">Company Name</Label>
+                <Input
+                  type="text"
+                  value={quotationData.billTo.companyName}
+                  onChange={(e) => setQuotationData(prev => ({
+                    ...prev,
+                    billTo: { ...prev.billTo, companyName: e.target.value }
+                  }))}
+                  placeholder="Enter company name"
+                  className="w-full"
+                />
+              </div>
               <div className="space-y-2 relative">
                 <Label className="text-sm font-medium">Name</Label>
                 <Input
@@ -507,11 +627,9 @@ export default function QuotationGenerator() {
                 <Label className="text-sm font-medium">Reference No.</Label>
                 <Input
                   type="text"
-                  value={quotationData.quotationRef}
-                  onChange={(e) => setQuotationData(prev => ({
-                    ...prev,
-                    quotationRef: e.target.value
-                  }))}
+                  value={String(quotationData.quotationRef || '')}
+                  readOnly
+                  className="bg-gray-50"
                 />
               </div>
               <div className="space-y-2">
