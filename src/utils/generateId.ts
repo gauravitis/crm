@@ -7,7 +7,7 @@ import { db } from '../config/firebase';
 import { doc, runTransaction } from 'firebase/firestore';
 
 // Get the next quotation number
-export async function getNextQuotationNumber(): Promise<string> {
+export async function getNextQuotationNumber(): Promise<number> {
   const counterRef = doc(db, 'counters', 'quotation');
   
   try {
@@ -23,21 +23,35 @@ export async function getNextQuotationNumber(): Promise<string> {
       return currentNumber;
     });
 
-    // Format the number with leading zeros
-    return result.toString().padStart(3, '0');
+    return result;
   } catch (error) {
     console.error('Error getting next quotation number:', error);
     // Fallback to a timestamp-based number if transaction fails
-    return Date.now().toString().slice(-3);
+    return parseInt(Date.now().toString().slice(-3));
   }
 }
 
 // Generate reference number with sequential counter
 export async function generateQuotationRef(): Promise<string> {
-  const date = new Date();
-  const dateStr = format(date, 'dd/MM/yyyy');
-  const sequentialNumber = await getNextQuotationNumber();
-  return `CBL-${dateStr}-${sequentialNumber}`;
+  try {
+    const date = new Date();
+    const dateStr = format(date, 'dd/MM/yyyy');
+    console.log('Date string:', dateStr);
+    
+    const number = await getNextQuotationNumber();
+    console.log('Next number:', number, typeof number);
+    
+    const sequentialNumber = number.toString().padStart(3, '0');
+    console.log('Padded number:', sequentialNumber);
+    
+    const ref = `CBL-${dateStr}-${sequentialNumber}`;
+    console.log('Final reference:', ref, typeof ref);
+    
+    return ref;
+  } catch (error) {
+    console.error('Error in generateQuotationRef:', error);
+    throw error;
+  }
 }
 
 // Legacy function for other IDs

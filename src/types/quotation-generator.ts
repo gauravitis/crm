@@ -74,20 +74,49 @@ export interface Quotation {
 import { Employee } from './employee';
 
 export interface QuotationData {
-  id?: string;
+  billTo: {
+    name: string;
+    address: string;
+    phone: string;
+    email: string;
+  };
+  billFrom: {
+    name: string;
+    address: string;
+    phone: string;
+    email: string;
+    gst: string;
+    pan: string;
+  };
   quotationRef: string;
-  billTo: BillTo;
   quotationDate: string;
   validTill: string;
   items: QuotationProduct[];
   subTotal: number;
   tax: number;
   grandTotal: number;
-  paymentTerms: string;
   notes: string;
-  status: 'PENDING' | 'SENT' | 'APPROVED' | 'REJECTED';
-  createdAt: string;
-  employee?: Employee;
+  paymentTerms: string;
+  bankDetails: {
+    bankName: string;
+    accountNo: string;
+    ifscCode: string;
+    branchCode: string;
+    microCode: string;
+    accountType: string;
+  };
+  document?: {
+    filename: string;
+    data: string;
+  };
+  employee?: {
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+    designation: string;
+  };
+  createdAt?: string;
 }
 
 export const QUOTATION_TEMPLATES: QuotationTemplate[] = [
