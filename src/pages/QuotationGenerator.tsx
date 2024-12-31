@@ -1,3 +1,4 @@
+import { generateQuotationRef } from '../utils/generateId';
 import React, { useEffect, useState } from 'react';
 import { QuotationData, QuotationProduct } from '../types/quotation-generator';
 import { format, parse } from 'date-fns';
@@ -26,19 +27,12 @@ import {
 
 const STORAGE_KEY = 'quotationData';
 
-// Function to generate random 3 letters
-const generateRandomLetters = () => {
-  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  return Array.from({ length: 3 }, () => letters.charAt(Math.floor(Math.random() * letters.length))).join('');
+// Function to generate reference number
+const generateReferenceNumber = async () => {
+  return await generateQuotationRef();
 };
 
-// Function to generate reference number
-const generateReferenceNumber = () => {
-  const date = new Date();
-  const dateStr = format(date, 'dd/MM/yyyy');
-  const randomLetters = generateRandomLetters();
-  return `CBL-${dateStr}-${randomLetters}`;
-};
+
 
 const defaultProduct: QuotationProduct = {
   sno: 1,
@@ -124,18 +118,29 @@ export default function QuotationGenerator() {
   const { clients } = useClients();
   const { items } = useItems();
   const { employees } = useEmployees();
-  const [quotationData, setQuotationData] = useState<QuotationData>(
-    () => {
-      const savedData = localStorage.getItem(STORAGE_KEY);
-      if (savedData) {
-        return JSON.parse(savedData);
-      }
-      return {
-        ...defaultQuotationData,
-        quotationRef: generateReferenceNumber(),
-      };
+  
+  const [quotationData, setQuotationData] = useState<QuotationData>(() => {
+    const savedData = localStorage.getItem(STORAGE_KEY);
+    if (savedData) {
+      return JSON.parse(savedData);
     }
-  );
+    return {
+      ...defaultQuotationData,
+      quotationRef: '', // Initialize empty, will be set in useEffect
+    };
+  });
+
+  // Set initial reference number
+  useEffect(() => {
+    if (!quotationData.quotationRef) {
+      generateReferenceNumber().then(ref => {
+        setQuotationData(prev => ({
+          ...prev,
+          quotationRef: ref
+        }));
+      });
+    }
+  }, []);
   const [clientSuggestions, setClientSuggestions] = useState<any[]>([]);
   const [itemSuggestions, setItemSuggestions] = useState<any[]>([]);
   const [showClientSuggestions, setShowClientSuggestions] = useState(false);
