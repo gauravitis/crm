@@ -3,9 +3,21 @@ import { useQuotations } from '../hooks/useQuotations';
 import QuotationDetails from '../components/quotations/QuotationDetails';
 import { Quotation } from '../types';
 import { format } from 'date-fns';
-import { Search, Eye, Trash2, X, CheckCircle, XCircle, Edit, Download } from 'lucide-react';
+import { Search, Eye, Trash2, X, CheckCircle, XCircle, Edit, Download, Mail } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
+import { emailService } from '../services/emailService';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function Quotations() {
   const navigate = useNavigate();
@@ -13,6 +25,10 @@ export default function Quotations() {
   const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [localQuotations, setLocalQuotations] = useState<Quotation[]>(quotations);
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+  const [emailQuotation, setEmailQuotation] = useState<Quotation | null>(null);
+  const [emailTo, setEmailTo] = useState('');
+  const [isSending, setIsSending] = useState(false);
 
   // Update local quotations when the main quotations list changes
   useEffect(() => {
@@ -107,6 +123,54 @@ export default function Quotations() {
     }
   };
 
+  const handleSendEmail = async (quotation: Quotation) => {
+    setEmailQuotation(quotation);
+    setEmailTo(quotation.billTo?.email || '');
+    setIsEmailDialogOpen(true);
+  };
+
+  const handleEmailSubmit = async () => {
+    if (!emailQuotation || !emailQuotation.document?.data) {
+      toast.error('No document available to send');
+      return;
+    }
+
+    if (!emailTo) {
+      toast.error('Please enter an email address');
+      return;
+    }
+
+    try {
+      setIsSending(true);
+      await emailService.sendQuotation({
+        to: emailTo,
+        quotationRef: emailQuotation.quotationRef,
+        clientName: emailQuotation.billTo?.name || 'Valued Customer',
+        documentData: emailQuotation.document.data,
+        filename: emailQuotation.document.filename || `Quotation-${emailQuotation.quotationRef}.docx`,
+        fromName: emailQuotation.employee?.name
+      });
+
+      // Update quotation status to SENT
+      const updatedQuotation = {
+        ...emailQuotation,
+        status: 'SENT'
+      };
+      await updateQuotation(updatedQuotation);
+      setLocalQuotations(prev => 
+        prev.map(q => q.id === emailQuotation.id ? updatedQuotation : q)
+      );
+
+      toast.success('Quotation sent successfully');
+      setIsEmailDialogOpen(false);
+    } catch (error) {
+      console.error('Error sending email:', error);
+      toast.error('Failed to send email');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   const filteredQuotations = localQuotations.filter(quotation => 
     quotation.quotationRef.toLowerCase().includes(searchTerm.toLowerCase()) ||
     quotation.billTo.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -194,13 +258,22 @@ export default function Quotations() {
                         <Edit className="w-5 h-5 text-blue-600" />
                       </button>
                       {quotation.document?.data && (
-                        <button
-                          onClick={() => handleDownload(quotation)}
-                          className="p-1 hover:bg-gray-100 rounded-full"
-                          title="Download Document"
-                        >
-                          <Download className="w-5 h-5 text-green-600" />
-                        </button>
+                        <>
+                          <button
+                            onClick={() => handleDownload(quotation)}
+                            className="p-1 hover:bg-gray-100 rounded-full"
+                            title="Download Document"
+                          >
+                            <Download className="w-5 h-5 text-green-600" />
+                          </button>
+                          <button
+                            onClick={() => handleSendEmail(quotation)}
+                            className="p-1 hover:bg-gray-100 rounded-full"
+                            title="Send Email"
+                          >
+                            <Mail className="w-5 h-5 text-purple-600" />
+                          </button>
+                        </>
                       )}
                       <button
                         onClick={(e) => handleDelete(e, quotation)}
@@ -263,6 +336,42 @@ export default function Quotations() {
           </div>
         </div>
       )}
+
+      {/* Email Dialog */}
+      <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send Quotation</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter client's email"
+                value={emailTo}
+                onChange={(e) => setEmailTo(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEmailDialogOpen(false)}
+              disabled={isSending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleEmailSubmit}
+              disabled={isSending}
+            >
+              {isSending ? 'Sending...' : 'Send'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

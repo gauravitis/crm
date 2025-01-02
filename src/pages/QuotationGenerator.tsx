@@ -137,6 +137,7 @@ export default function QuotationGenerator() {
   const { items } = useItems();
   const { employees } = useEmployees();
   
+  const [isSaving, setIsSaving] = useState(false);
   const [quotationData, setQuotationData] = useState<QuotationData>(() => {
     const savedData = localStorage.getItem(STORAGE_KEY);
     if (savedData) {
@@ -911,6 +912,27 @@ export default function QuotationGenerator() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Action Buttons */}
+        <div className="flex justify-end space-x-4 mt-6">
+          <Button
+            onClick={handleSaveQuotation}
+            disabled={isSaving}
+            className="bg-primary text-white hover:bg-primary/90"
+          >
+            {isSaving ? (
+              <>
+                <span className="animate-spin mr-2">⌛</span>
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4 mr-2" />
+                Save Quotation
+              </>
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   );
