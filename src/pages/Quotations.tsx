@@ -3,10 +3,12 @@ import { useQuotations } from '../hooks/useQuotations';
 import QuotationDetails from '../components/quotations/QuotationDetails';
 import { Quotation } from '../types';
 import { format } from 'date-fns';
-import { Search, Eye, Trash2, X, CheckCircle, XCircle } from 'lucide-react';
+import { Search, Eye, Trash2, X, CheckCircle, XCircle, Edit } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
 
 export default function Quotations() {
+  const navigate = useNavigate();
   const { quotations, deleteQuotation, updateQuotation } = useQuotations();
   const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -139,34 +141,45 @@ export default function Quotations() {
                       Total: ₹{formatTotal(quotation.grandTotal)}
                     </p>
                     <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => setSelectedQuotation(quotation)}
+                        className="p-1 hover:bg-gray-100 rounded-full"
+                        title="View Details"
+                      >
+                        <Eye className="w-5 h-5 text-gray-600" />
+                      </button>
+                      <button
+                        onClick={() => navigate(`/quotations/edit/${quotation.id}`)}
+                        className="p-1 hover:bg-gray-100 rounded-full"
+                        title="Edit Quotation"
+                      >
+                        <Edit className="w-5 h-5 text-blue-600" />
+                      </button>
+                      <button
+                        onClick={(e) => handleDelete(e, quotation)}
+                        className="p-1 hover:bg-gray-100 rounded-full"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-5 h-5 text-red-600" />
+                      </button>
                       {quotation.status === 'PENDING' && (
                         <>
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleApprove(quotation);
-                            }}
-                            className="text-green-600 hover:text-green-900"
+                            onClick={() => handleApprove(quotation)}
+                            className="p-1 hover:bg-gray-100 rounded-full"
+                            title="Approve"
                           >
-                            <CheckCircle className="h-5 w-5" />
+                            <CheckCircle className="w-5 h-5 text-green-600" />
                           </button>
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleReject(quotation);
-                            }}
-                            className="text-red-600 hover:text-red-900"
+                            onClick={() => handleReject(quotation)}
+                            className="p-1 hover:bg-gray-100 rounded-full"
+                            title="Reject"
                           >
-                            <XCircle className="h-5 w-5" />
+                            <XCircle className="w-5 h-5 text-red-600" />
                           </button>
                         </>
                       )}
-                      <button
-                        onClick={(e) => handleDelete(e, quotation)}
-                        className="text-gray-400 hover:text-gray-600"
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </button>
                     </div>
                   </div>
                 </div>

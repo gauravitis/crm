@@ -48,6 +48,8 @@ function App() {
                         <Route path="/clients" element={<Clients />} />
                         <Route path="/vendors" element={<Vendors />} />
                         <Route path="/quotations" element={<Quotations />} />
+                        <Route path="/quotations/new" element={<QuotationGenerator />} />
+                        <Route path="/quotations/edit/:id" element={<QuotationGenerator />} />
                         <Route path="/employees" element={<Employees />} />
                         <Route path="/quotation-generator" element={<QuotationGenerator />} />
                         <Route path="/pending-orders" element={<PendingOrders />} />

@@ -3,7 +3,8 @@ import { getQuotations } from '@/lib/firebase/quotations';
 import { toast } from 'react-hot-toast';
 import { QuotationData } from '@/types/quotation-generator';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { Download, Edit, Eye } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
   DialogContent,
@@ -12,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 
 export const QuotationList: React.FC = () => {
+  const navigate = useNavigate();
   const [quotations, setQuotations] = useState<QuotationData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedQuotation, setSelectedQuotation] = useState<QuotationData | null>(null);
@@ -92,7 +94,6 @@ export const QuotationList: React.FC = () => {
           <div
             key={quotation.quotationRef}
             className="bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg transition-shadow"
-            onClick={() => setSelectedQuotation(quotation)}
           >
             <div className="flex justify-between items-start">
               <div>
@@ -117,20 +118,34 @@ export const QuotationList: React.FC = () => {
                 <p className="text-lg font-semibold">
                   ₹{quotation.grandTotal.toLocaleString('en-IN')}
                 </p>
-                {quotation.document && (
+                <div className="flex space-x-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="mt-2"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDownloadDocument(quotation.document!);
-                    }}
+                    onClick={() => setSelectedQuotation(quotation)}
                   >
-                    <Download className="w-4 h-4 mr-2" />
-                    Download
+                    <Eye className="h-4 w-4 mr-1" />
+                    View
                   </Button>
-                )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate(`/quotations/edit/${quotation.id}`)}
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    Edit
+                  </Button>
+                  {quotation.document && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDownloadDocument(quotation.document)}
+                    >
+                      <Download className="h-4 w-4 mr-1" />
+                      Download
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -220,7 +235,7 @@ export const QuotationList: React.FC = () => {
               {selectedQuotation.document && (
                 <div className="mt-4 flex justify-end">
                   <Button
-                    onClick={() => handleDownloadDocument(selectedQuotation.document!)}
+                    onClick={() => handleDownloadDocument(selectedQuotation.document)}
                     className="flex items-center"
                   >
                     <Download className="w-4 h-4 mr-2" />

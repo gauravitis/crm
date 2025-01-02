@@ -17,6 +17,8 @@ import { FileText, FileType, Plus, Trash2, Save } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
+import { useNavigate, useParams } from 'react-router-dom';
+import { quotationService } from '../services/quotationService';
 
 const STORAGE_KEY = 'quotation_draft';
 
@@ -127,6 +129,9 @@ const formatDateForInput = (dateStr: string) => {
 };
 
 export default function QuotationGenerator() {
+  const navigate = useNavigate();
+  const { id } = useParams();
+  const [isEditMode] = useState(!!id);
   const { addQuotation } = useQuotations();
   const { clients } = useClients();
   const { items } = useItems();
@@ -341,61 +346,85 @@ export default function QuotationGenerator() {
 
   const handleSaveQuotation = async () => {
     try {
-      if (!selectedEmployee) {
-        toast.error('Please select an employee');
-        return;
-      }
+      setIsSaving(true);
 
-      // Generate the document first
-      const { filename, base64Data } = await handleGenerateQuotation();
-
-      // Ensure all numeric values are properly converted
-      const processedItems = quotationData.items.map(item => ({
-        ...item,
-        qty: Number(item.qty || 0),
-        unit_rate: Number(item.unit_rate || 0),
-        discount_percent: Number(item.discount_percent || 0),
-        gst_percent: Number(item.gst_percent || 0),
-        total_price: Number(item.total_price || 0)
-      }));
-
-      // Create employee object with only defined fields
-      const employeeData = {
-        id: selectedEmployee.id,
-        name: selectedEmployee.name,
-        ...(selectedEmployee.email && { email: selectedEmployee.email }),
-        ...(selectedEmployee.phone && { phone: selectedEmployee.phone }),
-        ...(selectedEmployee.designation && { designation: selectedEmployee.designation })
+      // Update quotation data with selected employee details
+      const documentData = {
+        ...quotationData,
+        employee: selectedEmployee ? {
+          id: selectedEmployee.id,
+          name: selectedEmployee.name,
+          email: selectedEmployee.email,
+          phone: selectedEmployee.mobile,
+          designation: selectedEmployee.designation || ''
+        } : quotationData.employee,
+        items: quotationData.items.map((item, index) => ({
+          ...item,
+          sno: index + 1,
+        })),
       };
 
+      const { buffer, filename } = await generateWord(documentData);
+      
+      // Convert buffer to base64 for storage
+      const base64Data = btoa(
+        new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+      );
+
       const quotationToSave = {
-        ...quotationData,
-        items: processedItems,
-        subTotal: Number(quotationData.subTotal || 0),
-        tax: Number(quotationData.tax || 0),
-        grandTotal: Number(quotationData.grandTotal || 0),
-        employee: employeeData,
-        createdAt: format(new Date(), 'dd/MM/yyyy HH:mm:ss'),
+        ...documentData,
         document: {
-          filename,
-          data: base64Data
+          data: base64Data,
+          filename
         }
       };
 
-      console.log('Saving quotation with data:', {
-        employee: quotationToSave.employee,
-        document: 'present',
-        createdAt: quotationToSave.createdAt
-      });
-      
-      await addQuotation(quotationToSave);
-      toast.success('Quotation saved successfully!');
-      await clearData();
+      if (isEditMode) {
+        await quotationService.updateQuotation(id!, quotationToSave);
+        toast.success('Quotation updated successfully');
+      } else {
+        await quotationService.addQuotation(quotationToSave);
+        toast.success('Quotation saved successfully');
+      }
+
+      navigate('/quotations');
     } catch (error) {
       console.error('Error saving quotation:', error);
       toast.error('Failed to save quotation');
+    } finally {
+      setIsSaving(false);
     }
   };
+
+  useEffect(() => {
+    const loadQuotation = async () => {
+      if (id) {
+        try {
+          const quotations = await quotationService.getQuotations();
+          const existingQuotation = quotations.find(q => q.id === id);
+          if (existingQuotation) {
+            setQuotationData(existingQuotation);
+            // Set selected employee if exists
+            if (existingQuotation.employee) {
+              const matchingEmployee = employees.find(e => e.id === existingQuotation.employee.id);
+              if (matchingEmployee) {
+                setSelectedEmployee(matchingEmployee);
+              }
+            }
+          } else {
+            toast.error('Quotation not found');
+            navigate('/quotations');
+          }
+        } catch (error) {
+          console.error('Error loading quotation:', error);
+          toast.error('Failed to load quotation');
+          navigate('/quotations');
+        }
+      }
+    };
+
+    loadQuotation();
+  }, [id, employees]);
 
   const handleClientNameChange = (value: string) => {
     // Update the quotation data
