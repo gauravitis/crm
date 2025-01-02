@@ -27,6 +27,8 @@ const defaultQuotationData: QuotationData = {
     address: '',
     phone: '',
     email: '',
+    company: '',
+    contactPerson: ''
   },
   billFrom: {
     name: '',
@@ -377,7 +379,7 @@ export default function QuotationGenerator() {
       ...prev,
       billTo: {
         ...prev.billTo,
-        name: value
+        contactPerson: value
       }
     }));
 
@@ -413,7 +415,8 @@ export default function QuotationGenerator() {
     setQuotationData(prev => ({
       ...prev,
       billTo: {
-        name: client.name || '',
+        company: client.company || '',
+        contactPerson: client.name || '',
         address: formattedAddress,
         phone: client.phone || '',
         email: client.email || ''
@@ -502,25 +505,25 @@ export default function QuotationGenerator() {
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2 relative">
-                <Label className="text-sm font-medium">Name</Label>
+                <Label className="text-sm font-medium">Company Name</Label>
                 <Input
                   type="text"
-                  value={quotationData.billTo.name}
+                  value={quotationData.billTo.company || ''}
                   onChange={(e) => setQuotationData(prev => ({
                     ...prev,
-                    billTo: { ...prev.billTo, name: e.target.value }
+                    billTo: { ...prev.billTo, company: e.target.value }
                   }))}
                   placeholder="Enter company name"
                   className="w-full"
                 />
               </div>
               <div className="space-y-2 relative">
-                <Label className="text-sm font-medium">Name</Label>
+                <Label className="text-sm font-medium">Contact Person Name</Label>
                 <Input
                   type="text"
-                  value={quotationData.billTo.name}
+                  value={quotationData.billTo.contactPerson || ''}
                   onChange={(e) => handleClientNameChange(e.target.value)}
-                  placeholder="Start typing client name..."
+                  placeholder="Start typing contact person name..."
                   className="w-full"
                 />
                 {showClientSuggestions && clientSuggestions.length > 0 && (

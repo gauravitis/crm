@@ -120,7 +120,7 @@ const createBorderedParagraph = (text: string | TextRun[], options: any = {}) =>
 const createHeaderContent = () => {
   const headerTextStyle = {
     ...STYLES.fonts.normal,
-    color: "FFFFFF",  // White color for text
+    color: "FFFFFF",  // White text
     size: 24,
   };
 
@@ -211,10 +211,10 @@ const createHeaderContent = () => {
               type: ShadingType.CLEAR,
             },
             margins: {
-              top: 200,
-              bottom: 200,
-              left: 200,
-              right: 200,
+              top: 100,
+              bottom: 100,
+              left: 100,
+              right: 100,
             },
             borders: {
               top: { style: BorderStyle.NONE },
@@ -344,93 +344,6 @@ const createSignatureSection = () => {
   ];
 };
 
-// Create contact person section
-const createContactPersonSection = (employee: any) => {
-  if (!employee) return [];
-
-  const table = new Table({
-    width: {
-      size: 100,
-      type: WidthType.PERCENTAGE,
-    },
-    borders: {
-      top: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
-      bottom: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
-      left: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
-      right: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
-    },
-    rows: [
-      // Header row
-      new TableRow({
-        children: [
-          new TableCell({
-            width: {
-              size: 100,
-              type: WidthType.PERCENTAGE,
-            },
-            shading: {
-              fill: COLORS.light,
-              type: ShadingType.CLEAR,
-            },
-            children: [
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: "Contact Person Details",
-                    ...STYLES.fonts.subHeader,
-                    bold: true,
-                  }),
-                ],
-              }),
-            ],
-          }),
-        ],
-      }),
-      new TableRow({
-        children: [
-          new TableCell({
-            children: [
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: `Name: ${employee.name}`,
-                    ...STYLES.fonts.normal,
-                  }),
-                ],
-              }),
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: `Mobile: ${employee.mobile}`,
-                    ...STYLES.fonts.normal,
-                  }),
-                ],
-              }),
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: `Email: ${employee.email}`,
-                    ...STYLES.fonts.normal,
-                  }),
-                ],
-              }),
-            ],
-          }),
-        ],
-      }),
-    ],
-  });
-
-  return [
-    new Paragraph({
-      spacing: {
-        before: STYLES.spacing.large,
-      },
-    }),
-    table,
-  ];
-};
-
 export async function generateWord(data: QuotationData): Promise<{ buffer: ArrayBuffer, filename: string }> {
   try {
     console.log('Generating document with data:', {
@@ -450,6 +363,17 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
           }
         }
       },
+      features: {
+        updateFields: true
+      },
+      settings: {
+        updateFields: true,
+        defaultTabStop: 720,
+        displayBackgroundShape: true,
+        evenAndOddHeaders: false,
+        trackRevisions: false,
+        defaultView: "web"
+      },
       sections: [{
         properties: {
           page: {
@@ -459,6 +383,13 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
               bottom: convertInchesToTwip(0.2),
               left: convertInchesToTwip(0.2),
             },
+            size: {
+              width: 12240, // 8.5 inches
+              height: 15840, // 11 inches
+            },
+            pageLayout: {
+              view: "web"
+            }
           },
         },
         footers: {
@@ -481,20 +412,120 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
           }),
 
           ...createQuotationTitle(data.quotationRef, data.quotationDate),
-          createBorderedParagraph([
-            new TextRun({ text: 'To:\n', bold: true, ...STYLES.fonts.normal }),
-            new TextRun({ text: data.billTo.companyName, bold: true, ...STYLES.fonts.normal }),
-            new TextRun({ text: '\n', ...STYLES.fonts.normal }),
-            new TextRun({ text: data.billTo.address, ...STYLES.fonts.normal }),
-            new TextRun({ text: '\n', ...STYLES.fonts.normal }),
-            new TextRun({ text: 'Kind Attn: ', bold: true, ...STYLES.fonts.normal }),
-            new TextRun({ text: data.billTo.name, ...STYLES.fonts.normal }),
-            new TextRun({ text: ' Tel: ', ...STYLES.fonts.normal }),
-            new TextRun({ text: data.billTo.phone || 'N/A', ...STYLES.fonts.normal }),
-            new TextRun({ text: ' | Email: ', ...STYLES.fonts.normal }),
-            new TextRun({ text: data.billTo.email || 'N/A', ...STYLES.fonts.normal })
-          ]),
-          new Paragraph({ text: '' }),
+
+          // To section with table
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "To,",
+                ...STYLES.fonts.normal,
+                bold: true
+              })
+            ],
+            spacing: {
+              before: 200,
+              after: 100
+            }
+          }),
+
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            borders: {
+              top: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+              bottom: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+              left: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+              right: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+            },
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    borders: {
+                      top: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                      bottom: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                      left: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                      right: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                    },
+                    margins: {
+                      top: 100,
+                      bottom: 100,
+                      left: 200,
+                      right: 200,
+                    },
+                    children: [
+                      // Company Name
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: data.billTo.company || '',
+                            ...STYLES.fonts.normal,
+                            bold: true,
+                            size: 24
+                          })
+                        ],
+                        spacing: {
+                          after: 200
+                        }
+                      }),
+                      // Address
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: data.billTo.address || '',
+                            ...STYLES.fonts.normal
+                          })
+                        ],
+                        spacing: {
+                          after: 200
+                        }
+                      }),
+                      // Contact Details Row
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: "Kind Attn: ",
+                            ...STYLES.fonts.normal,
+                            bold: true
+                          }),
+                          new TextRun({
+                            text: data.billTo.contactPerson || '',
+                            ...STYLES.fonts.normal
+                          }),
+                          new TextRun({
+                            text: " | Tel: ",
+                            ...STYLES.fonts.normal
+                          }),
+                          new TextRun({
+                            text: data.billTo.phone || 'N/A',
+                            ...STYLES.fonts.normal
+                          }),
+                          new TextRun({
+                            text: " | Email: ",
+                            ...STYLES.fonts.normal
+                          }),
+                          new TextRun({
+                            text: data.billTo.email || 'N/A',
+                            ...STYLES.fonts.normal
+                          })
+                        ],
+                        spacing: {
+                          after: 100
+                        }
+                      })
+                    ]
+                  })
+                ]
+              })
+            ]
+          }),
+
+          new Paragraph({ 
+            text: '',
+            spacing: {
+              after: 200
+            }
+          }),
+
           // Items Table with alternating colors
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
@@ -668,7 +699,7 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
           }),
           new Paragraph({ text: '' }),
 
-          // Totals
+          // Totals table
           new Table({
             width: { size: 40, type: WidthType.PERCENTAGE },
             alignment: AlignmentType.RIGHT,
@@ -724,76 +755,333 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
           new Paragraph({ text: '' }),
 
           // Bank Details
-          createBorderedParagraph([
-            new TextRun({ text: 'Bank Details\n', bold: true, ...STYLES.fonts.normal }),
-            new TextRun({ text: data.bankDetails.bankName + '\n', ...STYLES.fonts.normal }),
-            new TextRun({ text: `Account No: ${data.bankDetails.accountNo}\n`, ...STYLES.fonts.normal }),
-            new TextRun({ text: `NEFT/RTGS IFSC: ${data.bankDetails.ifscCode}\n`, ...STYLES.fonts.normal }),
-            new TextRun({ text: `Branch code: ${data.bankDetails.branchCode}\n`, ...STYLES.fonts.normal }),
-            new TextRun({ text: `Micro code: ${data.bankDetails.microCode}\n`, ...STYLES.fonts.normal }),
-            new TextRun({ text: `Account type: ${data.bankDetails.accountType}`, ...STYLES.fonts.normal })
-          ]),
-          new Paragraph({ text: '' }),
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            borders: STYLES.borders.default,
+            rows: [
+              // Header Row
+              new TableRow({
+                children: [
+                  new TableCell({
+                    children: [
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: "Bank Details",
+                            color: "FFFFFF",  // White text
+                            bold: true,
+                            size: 24,
+                            ...STYLES.fonts.normal,
+                          })
+                        ],
+                        alignment: AlignmentType.CENTER
+                      })
+                    ],
+                    shading: {
+                      fill: COLORS.primary,  // Blue background
+                      type: ShadingType.CLEAR,
+                    },
+                    margins: {
+                      top: 100,
+                      bottom: 100,
+                      left: 200,
+                      right: 200
+                    }
+                  })
+                ]
+              }),
+              // Content Row
+              new TableRow({
+                children: [
+                  new TableCell({
+                    children: [
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: "HDFC BANK LTD.",
+                            ...STYLES.fonts.normal,
+                            bold: true,
+                            size: 24
+                          })
+                        ],
+                        spacing: { after: 200 }
+                      }),
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: "Account No: ",
+                            ...STYLES.fonts.normal,
+                            bold: true
+                          }),
+                          new TextRun({
+                            text: "50200017511430",
+                            ...STYLES.fonts.normal
+                          }),
+                          new TextRun({
+                            text: " ; NEFT/RTGS IFSC: ",
+                            ...STYLES.fonts.normal,
+                            bold: true
+                          }),
+                          new TextRun({
+                            text: "HDFC0000590",
+                            ...STYLES.fonts.normal
+                          })
+                        ],
+                        spacing: { after: 200 }
+                      }),
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: "Branch Code: ",
+                            ...STYLES.fonts.normal,
+                            bold: true
+                          }),
+                          new TextRun({
+                            text: "0590",
+                            ...STYLES.fonts.normal
+                          }),
+                          new TextRun({
+                            text: " ; Micro Code: ",
+                            ...STYLES.fonts.normal,
+                            bold: true
+                          }),
+                          new TextRun({
+                            text: "110240081",
+                            ...STYLES.fonts.normal
+                          }),
+                          new TextRun({
+                            text: " ; Account Type: ",
+                            ...STYLES.fonts.normal,
+                            bold: true
+                          }),
+                          new TextRun({
+                            text: "Current Account",
+                            ...STYLES.fonts.normal
+                          })
+                        ],
+                        spacing: { after: 200 }
+                      })
+                    ],
+                    margins: {
+                      top: 200,
+                      bottom: 200,
+                      left: 200,
+                      right: 200
+                    }
+                  })
+                ]
+              })
+            ]
+          }),
+
+          new Paragraph({ text: '', spacing: { after: 200 } }),
 
           // Terms and Conditions Table
           new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            borders: STYLES.borders.default,
             rows: [
+              // Header Row
               new TableRow({
                 children: [
                   new TableCell({
-                    children: [new Paragraph("Terms & Conditions")],
-                    columnSpan: 2,
+                    children: [
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: "Terms & Conditions",
+                            color: "FFFFFF",  // White text
+                            bold: true,
+                            size: 24,
+                            ...STYLES.fonts.normal,
+                          })
+                        ],
+                        alignment: AlignmentType.CENTER
+                      })
+                    ],
                     shading: {
-                      fill: "D3D3D3",
+                      fill: COLORS.primary,  // Blue background
+                      type: ShadingType.CLEAR,
                     },
-                  }),
-                ],
+                    margins: {
+                      top: 100,
+                      bottom: 100,
+                      left: 200,
+                      right: 200
+                    }
+                  })
+                ]
               }),
+              // Content Row
               new TableRow({
                 children: [
                   new TableCell({
-                    children: [new Paragraph("1. Payment")],
-                    width: {
-                      size: 30,
-                      type: WidthType.PERCENTAGE,
-                    },
-                  }),
-                  new TableCell({
-                    children: [new Paragraph("Payment within 15 days.")],
-                  }),
-                ],
-              }),
-              new TableRow({
-                children: [
-                  new TableCell({
-                    children: [new Paragraph("2. Validity")],
-                  }),
-                  new TableCell({
-                    children: [new Paragraph("30 Days")],
-                  }),
-                ],
-              }),
-              new TableRow({
-                children: [
-                  new TableCell({
-                    children: [new Paragraph("3. Note")],
-                  }),
-                  new TableCell({
-                    children: [new Paragraph("Please check specification before order")],
-                  }),
-                ],
-              }),
-            ],
-            width: {
-              size: 100,
-              type: WidthType.PERCENTAGE,
-            },
+                    children: [
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: "1. Payment Terms: ",
+                            ...STYLES.fonts.normal,
+                            bold: true
+                          }),
+                          new TextRun({
+                            text: data.paymentTerms || "100% advance payment",
+                            ...STYLES.fonts.normal
+                          })
+                        ],
+                        spacing: { after: 200 }
+                      }),
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: "2. Validity: ",
+                            ...STYLES.fonts.normal,
+                            bold: true
+                          }),
+                          new TextRun({
+                            text: data.validTill ? `Valid till ${formatDate(data.validTill)}` : "30 days from the date of quotation",
+                            ...STYLES.fonts.normal
+                          })
+                        ],
+                        spacing: { after: 200 }
+                      }),
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: "3. GST: ",
+                            ...STYLES.fonts.normal,
+                            bold: true
+                          }),
+                          new TextRun({
+                            text: "As applicable extra",
+                            ...STYLES.fonts.normal
+                          })
+                        ],
+                        spacing: { after: 200 }
+                      }),
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: "4. Delivery: ",
+                            ...STYLES.fonts.normal,
+                            bold: true
+                          }),
+                          new TextRun({
+                            text: "Ex-Stock / As mentioned against each item",
+                            ...STYLES.fonts.normal
+                          })
+                        ],
+                        spacing: { after: 200 }
+                      })
+                    ],
+                    margins: {
+                      top: 200,
+                      bottom: 200,
+                      left: 200,
+                      right: 200
+                    }
+                  })
+                ]
+              })
+            ]
           }),
 
-          // Contact person section
-          ...createContactPersonSection(data.employee),
+          new Paragraph({ text: '', spacing: { after: 200 } }),
 
-          new Paragraph({ text: '' }),  // Add some space
+          // Contact Person Table
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            borders: STYLES.borders.default,
+            rows: [
+              // Header Row
+              new TableRow({
+                children: [
+                  new TableCell({
+                    children: [
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: "Contact Person",
+                            color: "FFFFFF",  // White text
+                            bold: true,
+                            size: 24,
+                            ...STYLES.fonts.normal,
+                          })
+                        ],
+                        alignment: AlignmentType.CENTER
+                      })
+                    ],
+                    shading: {
+                      fill: COLORS.primary,  // Blue background
+                      type: ShadingType.CLEAR,
+                    },
+                    margins: {
+                      top: 100,
+                      bottom: 100,
+                      left: 200,
+                      right: 200
+                    }
+                  })
+                ]
+              }),
+              // Content Row
+              new TableRow({
+                children: [
+                  new TableCell({
+                    children: [
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: data.employee.name || '',
+                            ...STYLES.fonts.normal,
+                            bold: true,
+                            size: 24
+                          })
+                        ],
+                        spacing: { after: 200 }
+                      }),
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: "Mobile: ",
+                            ...STYLES.fonts.normal,
+                            bold: true
+                          }),
+                          new TextRun({
+                            text: data.employee.mobile || '',
+                            ...STYLES.fonts.normal
+                          })
+                        ],
+                        spacing: { after: 200 }
+                      }),
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: "Email: ",
+                            ...STYLES.fonts.normal,
+                            bold: true
+                          }),
+                          new TextRun({
+                            text: data.employee.email || '',
+                            ...STYLES.fonts.normal
+                          })
+                        ],
+                        spacing: { after: 200 }
+                      })
+                    ],
+                    margins: {
+                      top: 200,
+                      bottom: 200,
+                      left: 200,
+                      right: 200
+                    }
+                  })
+                ]
+              })
+            ]
+          }),
+
+          new Paragraph({ text: '', spacing: { after: 200 } }),
 
           // Add signature section
           ...createSignatureSection(),
