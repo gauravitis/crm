@@ -39,6 +39,10 @@ export const quotationService = {
             phone: '',
             designation: ''
           },
+          document: data.document ? {
+            filename: data.document.filename,
+            data: data.document.data
+          } : undefined,
           quotationDate: convertTimestampToString(data.quotationDate) || convertTimestampToString(data.createdAt) || new Date().toISOString(),
           validTill: convertTimestampToString(data.validTill) || convertTimestampToString(data.validUntil) || '',
           items: data.items || [],

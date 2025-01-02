@@ -3,7 +3,7 @@ import { useQuotations } from '../hooks/useQuotations';
 import QuotationDetails from '../components/quotations/QuotationDetails';
 import { Quotation } from '../types';
 import { format } from 'date-fns';
-import { Search, Eye, Trash2, X, CheckCircle, XCircle, Edit } from 'lucide-react';
+import { Search, Eye, Trash2, X, CheckCircle, XCircle, Edit, Download } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 
@@ -66,6 +66,44 @@ export default function Quotations() {
       toast.success('Quotation rejected successfully');
     } catch (error) {
       toast.error('Failed to reject quotation');
+    }
+  };
+
+  const handleDownload = (quotation: Quotation) => {
+    try {
+      if (!quotation.document?.data) {
+        toast.error('No document available for download');
+        return;
+      }
+
+      // Convert base64 to blob
+      const binaryStr = atob(quotation.document.data);
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) {
+        bytes[i] = binaryStr.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { 
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
+      });
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = quotation.document.filename || `Quotation-${quotation.quotationRef}.docx`;
+      document.body.appendChild(a);
+      a.click();
+
+      // Cleanup
+      setTimeout(() => {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+
+      toast.success('Document downloaded successfully');
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      toast.error('Failed to download document');
     }
   };
 
@@ -155,6 +193,15 @@ export default function Quotations() {
                       >
                         <Edit className="w-5 h-5 text-blue-600" />
                       </button>
+                      {quotation.document?.data && (
+                        <button
+                          onClick={() => handleDownload(quotation)}
+                          className="p-1 hover:bg-gray-100 rounded-full"
+                          title="Download Document"
+                        >
+                          <Download className="w-5 h-5 text-green-600" />
+                        </button>
+                      )}
                       <button
                         onClick={(e) => handleDelete(e, quotation)}
                         className="p-1 hover:bg-gray-100 rounded-full"
