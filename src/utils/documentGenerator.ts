@@ -519,11 +519,28 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
             ]
           }),
 
-          new Paragraph({ 
-            text: '',
-            spacing: {
-              after: 200
-            }
+          new Paragraph({ text: '', spacing: { after: 200 } }),
+
+          // Greeting text
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "Dear Sir/Madam,",
+                ...STYLES.fonts.normal,
+                size: 24
+              })
+            ],
+            spacing: { after: 200 }
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "We wish to thank you for your interest in our Products. We hereby quote as below:",
+                ...STYLES.fonts.normal,
+                size: 24
+              })
+            ],
+            spacing: { after: 400 }
           }),
 
           // Items Table with alternating colors
