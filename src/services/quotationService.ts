@@ -32,6 +32,13 @@ export const quotationService = {
             phone: data.phone || '',
             email: data.email || ''
           },
+          employee: data.employee || {
+            id: '',
+            name: 'N/A',
+            email: '',
+            phone: '',
+            designation: ''
+          },
           quotationDate: convertTimestampToString(data.quotationDate) || convertTimestampToString(data.createdAt) || new Date().toISOString(),
           validTill: convertTimestampToString(data.validTill) || convertTimestampToString(data.validUntil) || '',
           items: data.items || [],

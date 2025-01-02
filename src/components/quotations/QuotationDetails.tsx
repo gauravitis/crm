@@ -96,18 +96,59 @@ export default function QuotationDetails({ quotation, onClose, onSave }: Quotati
       {/* Client Details */}
       <div>
         <h3 className="text-lg font-medium mb-2">Client Details</h3>
-        <p className="text-gray-600">{quotation.billTo?.name || 'N/A'}</p>
-        <p className="text-gray-600">
-          {quotation.billTo?.address && typeof quotation.billTo.address === 'object' 
-            ? `${quotation.billTo.address.street || ''}, 
-               ${quotation.billTo.address.city || ''}, 
-               ${quotation.billTo.address.state || ''} 
-               ${quotation.billTo.address.postalCode || ''}, 
-               ${quotation.billTo.address.country || ''}`.replace(/\s+/g, ' ').trim()
-            : quotation.billTo?.address || 'N/A'}
-        </p>
-        <p className="text-gray-600">{quotation.billTo?.phone || 'N/A'}</p>
-        <p className="text-gray-600">{quotation.billTo?.email || 'N/A'}</p>
+        <div className="space-y-1">
+          <p className="text-gray-600">
+            <span className="font-medium">Company: </span>
+            {quotation.billTo?.company || 'N/A'}
+          </p>
+          <p className="text-gray-600">
+            <span className="font-medium">Contact Person: </span>
+            {quotation.billTo?.contactPerson || quotation.billTo?.name || 'N/A'}
+          </p>
+          <p className="text-gray-600">
+            <span className="font-medium">Address: </span>
+            {quotation.billTo?.address && typeof quotation.billTo.address === 'object' 
+              ? `${quotation.billTo.address.street || ''}, 
+                 ${quotation.billTo.address.city || ''}, 
+                 ${quotation.billTo.address.state || ''} 
+                 ${quotation.billTo.address.postalCode || ''}, 
+                 ${quotation.billTo.address.country || ''}`.replace(/\s+/g, ' ').trim()
+              : quotation.billTo?.address || 'N/A'}
+          </p>
+          <p className="text-gray-600">
+            <span className="font-medium">Phone: </span>
+            {quotation.billTo?.phone || 'N/A'}
+          </p>
+          <p className="text-gray-600">
+            <span className="font-medium">Email: </span>
+            {quotation.billTo?.email || 'N/A'}
+          </p>
+        </div>
+      </div>
+
+      {/* Employee Details */}
+      <div>
+        <h3 className="text-lg font-medium mb-2">Created By</h3>
+        <div className="space-y-1">
+          <p className="text-gray-600">
+            <span className="font-medium">Name: </span>
+            {quotation.employee?.name || 'N/A'}
+          </p>
+          <p className="text-gray-600">
+            <span className="font-medium">Phone: </span>
+            {quotation.employee?.phone || quotation.employee?.mobile || 'N/A'}
+          </p>
+          <p className="text-gray-600">
+            <span className="font-medium">Email: </span>
+            {quotation.employee?.email || 'N/A'}
+          </p>
+          {quotation.employee?.designation && (
+            <p className="text-gray-600">
+              <span className="font-medium">Designation: </span>
+              {quotation.employee.designation}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Dates */}
@@ -132,7 +173,9 @@ export default function QuotationDetails({ quotation, onClose, onSave }: Quotati
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
                 <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Quantity</th>
                 <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Unit Rate</th>
-                <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">GST</th>
+                <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Discount %</th>
+                <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Discounted Price</th>
+                <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">GST %</th>
                 <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
               </tr>
             </thead>
@@ -142,6 +185,8 @@ export default function QuotationDetails({ quotation, onClose, onSave }: Quotati
                   <td className="px-4 py-2 text-sm">{item.product_description || 'N/A'}</td>
                   <td className="px-4 py-2 text-sm text-right">{formatNumber(item.qty, 0)}</td>
                   <td className="px-4 py-2 text-sm text-right">₹{formatNumber(item.unit_rate)}</td>
+                  <td className="px-4 py-2 text-sm text-right">{formatNumber(item.discount_percent, 0)}%</td>
+                  <td className="px-4 py-2 text-sm text-right">₹{formatNumber(item.discounted_value)}</td>
                   <td className="px-4 py-2 text-sm text-right">{formatNumber(item.gst_percent, 0)}%</td>
                   <td className="px-4 py-2 text-sm text-right">₹{formatNumber(item.total_price)}</td>
                 </tr>

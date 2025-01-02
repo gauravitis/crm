@@ -38,6 +38,13 @@ const defaultQuotationData: QuotationData = {
     gst: '',
     pan: '',
   },
+  employee: {
+    id: '',
+    name: '',
+    email: '',
+    phone: '',
+    designation: ''
+  },
   quotationRef: '',
   quotationDate: new Date().toISOString().split('T')[0],
   validTill: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
@@ -165,6 +172,16 @@ export default function QuotationGenerator() {
     }
   }, []);
 
+  // Set selected employee when loading quotation data
+  useEffect(() => {
+    if (quotationData.employee?.id && employees.length > 0) {
+      const employee = employees.find(emp => emp.id === quotationData.employee?.id);
+      if (employee) {
+        setSelectedEmployee(employee);
+      }
+    }
+  }, [quotationData.employee?.id, employees]);
+
   const [clientSuggestions, setClientSuggestions] = useState<any[]>([]);
   const [itemSuggestions, setItemSuggestions] = useState<any[]>([]);
   const [showClientSuggestions, setShowClientSuggestions] = useState(false);
@@ -262,9 +279,16 @@ export default function QuotationGenerator() {
 
   const handleGenerateQuotation = async () => {
     try {
+      // Update quotation data with selected employee details
       const documentData = {
         ...quotationData,
-        employee: selectedEmployee,
+        employee: selectedEmployee ? {
+          id: selectedEmployee.id,
+          name: selectedEmployee.name,
+          email: selectedEmployee.email,
+          phone: selectedEmployee.mobile,
+          designation: selectedEmployee.designation || ''
+        } : quotationData.employee,
         items: quotationData.items.map((item, index) => ({
           ...item,
           sno: index + 1,
