@@ -306,7 +306,7 @@ const createSignatureSection = () => {
     new Paragraph({
       children: [
         new TextRun({
-          text: "For CHEMBIO LIFESCIENCE",
+          text: "For CHEMBIO LIFESCIENCES",
           ...STYLES.fonts.normal,
           bold: true,
         }),
@@ -454,17 +454,10 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
         properties: {
           page: {
             margin: {
-<<<<<<< HEAD
               top: convertInchesToTwip(0.2),
               right: convertInchesToTwip(0.2),
               bottom: convertInchesToTwip(0.2),
               left: convertInchesToTwip(0.2),
-=======
-              top: 1440,
-              right: 1440,
-              bottom: 1440,
-              left: 1440,
->>>>>>> fc5992efb87c17e88b621d4fcc69f0e56e94879b
             },
           },
         },

@@ -3,44 +3,55 @@ import React, { useEffect, useState } from 'react';
 import { QuotationData, QuotationProduct } from '../types/quotation-generator';
 import { format, parse } from 'date-fns';
 import { generateWord } from '../utils/documentGenerator';
-import { FileText, FileType, Plus, Trash2, Save } from 'lucide-react';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import { useQuotations } from '../hooks/useQuotations';
 import { useClients } from '../hooks/useClients';
 import { useItems } from '../hooks/useItems';
 import { useEmployees } from '../hooks/useEmployees';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  TableFooter,
-} from "@/components/ui/table";
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { FileText, FileType, Plus, Trash2, Save } from 'lucide-react';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 
-const STORAGE_KEY = 'quotationData';
+const STORAGE_KEY = 'quotation_draft';
 
-// Function to generate reference number
-const generateReferenceNumber = async () => {
-  try {
-    console.log('Generating reference number...');
-    const ref = await generateQuotationRef();
-    console.log('Generated reference:', ref, typeof ref);
-    if (typeof ref !== 'string') {
-      console.error('Reference is not a string:', ref);
-      return `CBL-${format(new Date(), 'dd/MM/yyyy')}-ERR`;
-    }
-    return ref;
-  } catch (error) {
-    console.error('Error generating reference number:', error);
-    return `CBL-${format(new Date(), 'dd/MM/yyyy')}-ERR`;
+// Default quotation data structure
+const defaultQuotationData: QuotationData = {
+  billTo: {
+    name: '',
+    address: '',
+    phone: '',
+    email: '',
+  },
+  billFrom: {
+    name: '',
+    address: '',
+    phone: '',
+    email: '',
+    gst: '',
+    pan: '',
+  },
+  quotationRef: '',
+  quotationDate: new Date().toISOString().split('T')[0],
+  validTill: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
+  items: [],
+  subTotal: 0,
+  tax: 0,
+  grandTotal: 0,
+  notes: '',
+  paymentTerms: '',
+  bankDetails: {
+    bankName: '',
+    accountNo: '',
+    ifscCode: '',
+    branchCode: '',
+    microCode: '',
+    accountType: '',
   }
 };
 
@@ -61,41 +72,21 @@ const defaultProduct: QuotationProduct = {
   make: '',
 };
 
-const defaultQuotationData: QuotationData = {
-  billTo: {
-    name: '',
-    companyName: '', // Add company name field
-    address: '',
-    phone: '',
-    email: '',
-    contactPerson: ''
-  },
-  billFrom: {
-    name: 'CHEMBIO LIFESCIENCES',
-    address: 'L-10, 1st Floor, Himalaya Legend, Near Indirapuram Public School\nNyay Khand-1, Indirapuram, Ghaziabad-201014.',
-    phone: '0120 4909400',
-    email: 'chembio.sales@gmail.com',
-    gst: '09AALFC0922C1ZU',
-    pan: 'AALFC0922C',
-  },
-  quotationRef: '',  // Empty string to start
-  quotationDate: format(new Date(), 'dd/MM/yyyy'),  // Format date string consistently
-  validTill: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'dd/MM/yyyy'),  // Format date string consistently
-  items: [defaultProduct],
-  subTotal: 0,
-  tax: 0,
-  grandTotal: 0,
-  notes: '',
-  paymentTerms: '100% advance payment',
-  bankDetails: {
-    bankName: 'HDFC BANK LTD.',
-    accountNo: '50200017511430',
-    ifscCode: 'HDFC0000590',
-    branchCode: '0590',
-    microCode: '110240081',
-    accountType: 'Current account',
-  },
-  document: null
+// Function to generate reference number
+const generateReferenceNumber = async () => {
+  try {
+    console.log('Generating reference number...');
+    const ref = await generateQuotationRef();
+    console.log('Generated reference:', ref, typeof ref);
+    if (typeof ref !== 'string') {
+      console.error('Reference is not a string:', ref);
+      return `CBL-${format(new Date(), 'dd/MM/yyyy')}-ERR`;
+    }
+    return ref;
+  } catch (error) {
+    console.error('Error generating reference number:', error);
+    return `CBL-${format(new Date(), 'dd/MM/yyyy')}-ERR`;
+  }
 };
 
 const formatDateForDisplay = (dateStr: string) => {
@@ -241,7 +232,7 @@ export default function QuotationGenerator() {
     });
     setQuotationData(prev => ({
       ...prev,
-      items: newItems,
+      items: newItems
     }));
     updateTotals(newItems);
   };
@@ -423,7 +414,6 @@ export default function QuotationGenerator() {
       ...prev,
       billTo: {
         name: client.name || '',
-        companyName: client.company || '', // Add company name field
         address: formattedAddress,
         phone: client.phone || '',
         email: client.email || ''
@@ -512,13 +502,13 @@ export default function QuotationGenerator() {
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2 relative">
-                <Label className="text-sm font-medium">Company Name</Label>
+                <Label className="text-sm font-medium">Name</Label>
                 <Input
                   type="text"
-                  value={quotationData.billTo.companyName}
+                  value={quotationData.billTo.name}
                   onChange={(e) => setQuotationData(prev => ({
                     ...prev,
-                    billTo: { ...prev.billTo, companyName: e.target.value }
+                    billTo: { ...prev.billTo, name: e.target.value }
                   }))}
                   placeholder="Enter company name"
                   className="w-full"
