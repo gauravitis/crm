@@ -6,7 +6,7 @@
   "framework": "vite",
   "outputDirectory": "./dist",
   "functions": {
-    "pages/api/*.js": {
+    "api/*.js": {
       "memory": 1024,
       "maxDuration": 10
     }
@@ -14,7 +14,7 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/pages/api/$1.js"
+      "dest": "/api/$1"
     },
     {
       "src": "/(.*)",
