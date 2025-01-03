@@ -25,28 +25,16 @@ export default function ClientModal({ isOpen, onClose, onSubmit, client }: Clien
     }
   });
 
+  const [error, setError] = useState('');
+
   useEffect(() => {
     if (client) {
       setFormData({
         name: client.name,
-        email: client.email,
-        phone: client.phone,
-        company: client.company,
+        email: client.email || '',
+        phone: client.phone || '',
+        company: client.company || '',
         address: client.address || {
-          street: '',
-          city: '',
-          state: '',
-          postalCode: '',
-          country: ''
-        }
-      });
-    } else {
-      setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        company: '',
-        address: {
           street: '',
           city: '',
           state: '',
@@ -59,6 +47,14 @@ export default function ClientModal({ isOpen, onClose, onSubmit, client }: Clien
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Only validate name field
+    if (!formData.name?.trim()) {
+      setError('Name is required');
+      return;
+    }
+    
+    setError('');
     onSubmit(formData);
     onClose();
   };
@@ -82,14 +78,18 @@ export default function ClientModal({ isOpen, onClose, onSubmit, client }: Clien
           </div>
 
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            {error && (
+              <div className="text-red-500 text-sm">{error}</div>
+            )}
+            
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Name
+                  Name *
                 </label>
                 <input
                   type="text"
-                  value={formData.name}
+                  value={formData.name || ''}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
@@ -102,10 +102,9 @@ export default function ClientModal({ isOpen, onClose, onSubmit, client }: Clien
                 </label>
                 <input
                   type="text"
-                  value={formData.company}
+                  value={formData.company || ''}
                   onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
                 />
               </div>
             </div>
@@ -117,10 +116,9 @@ export default function ClientModal({ isOpen, onClose, onSubmit, client }: Clien
                 </label>
                 <input
                   type="email"
-                  value={formData.email}
+                  value={formData.email || ''}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
                 />
               </div>
 
@@ -130,10 +128,9 @@ export default function ClientModal({ isOpen, onClose, onSubmit, client }: Clien
                 </label>
                 <input
                   type="tel"
-                  value={formData.phone}
+                  value={formData.phone || ''}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
                 />
               </div>
             </div>
@@ -148,13 +145,12 @@ export default function ClientModal({ isOpen, onClose, onSubmit, client }: Clien
                   </label>
                   <input
                     type="text"
-                    value={formData.address?.street}
+                    value={formData.address?.street || ''}
                     onChange={(e) => setFormData({
                       ...formData,
                       address: { ...formData.address!, street: e.target.value }
                     })}
                     className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
                   />
                 </div>
 
@@ -165,13 +161,12 @@ export default function ClientModal({ isOpen, onClose, onSubmit, client }: Clien
                     </label>
                     <input
                       type="text"
-                      value={formData.address?.city}
+                      value={formData.address?.city || ''}
                       onChange={(e) => setFormData({
                         ...formData,
                         address: { ...formData.address!, city: e.target.value }
                       })}
                       className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
                     />
                   </div>
 
@@ -181,13 +176,12 @@ export default function ClientModal({ isOpen, onClose, onSubmit, client }: Clien
                     </label>
                     <input
                       type="text"
-                      value={formData.address?.state}
+                      value={formData.address?.state || ''}
                       onChange={(e) => setFormData({
                         ...formData,
                         address: { ...formData.address!, state: e.target.value }
                       })}
                       className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
                     />
                   </div>
                 </div>
@@ -199,13 +193,12 @@ export default function ClientModal({ isOpen, onClose, onSubmit, client }: Clien
                     </label>
                     <input
                       type="text"
-                      value={formData.address?.postalCode}
+                      value={formData.address?.postalCode || ''}
                       onChange={(e) => setFormData({
                         ...formData,
                         address: { ...formData.address!, postalCode: e.target.value }
                       })}
                       className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
                     />
                   </div>
 
@@ -215,13 +208,12 @@ export default function ClientModal({ isOpen, onClose, onSubmit, client }: Clien
                     </label>
                     <input
                       type="text"
-                      value={formData.address?.country}
+                      value={formData.address?.country || ''}
                       onChange={(e) => setFormData({
                         ...formData,
                         address: { ...formData.address!, country: e.target.value }
                       })}
                       className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
                     />
                   </div>
                 </div>
