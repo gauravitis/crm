@@ -30,8 +30,8 @@ import { Packer } from "docx";
 const COLORS = {
   secondary: "#4B5563",
   border: "#E5E7EB",
-  header: "#1B4C7C",  // Changed to a darker, more professional blue
-  light: "#F3F4F6"
+  header: "#1F497D",  // Dark blue header color
+  light: "#F2F2F2"
 };
 
 // Common styles
@@ -187,7 +187,7 @@ const createHeaderContent = () => {
                   }),
                 ],
                 alignment: AlignmentType.CENTER,
-                spacing: { before: 0, after: 0, line: 240 },
+                spacing: { before: 0, after: 0, line: 200 },
               }),
               // Address
               new Paragraph({
@@ -202,7 +202,7 @@ const createHeaderContent = () => {
                   }),
                 ],
                 alignment: AlignmentType.CENTER,
-                spacing: { before: 0, after: 0, line: 240 },
+                spacing: { before: 0, after: 0, line: 200 },
               }),
               // Contact
               new Paragraph({
@@ -217,7 +217,7 @@ const createHeaderContent = () => {
                   }),
                 ],
                 alignment: AlignmentType.CENTER,
-                spacing: { before: 0, after: 0, line: 240 },
+                spacing: { before: 0, after: 0, line: 200 },
               }),
               // GST and PAN
               new Paragraph({
@@ -228,12 +228,12 @@ const createHeaderContent = () => {
                   }),
                 ],
                 alignment: AlignmentType.CENTER,
-                spacing: { before: 0, after: 0, line: 240 },
+                spacing: { before: 0, after: 0, line: 200 },
               }),
             ],
             margins: {
-              top: 100,
-              bottom: 100,
+              top: 60,
+              bottom: 60,
               left: 100,
               right: 100,
             },
@@ -251,7 +251,7 @@ const createQuotationTitle = (reference: string, date: string) => {
   return [
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { before: STYLES.spacing.normal, after: STYLES.spacing.normal },
+      spacing: { before: STYLES.spacing.tiny, after: STYLES.spacing.tiny },
       children: [
         new TextRun({ 
           text: 'QUOTATION',
@@ -261,15 +261,15 @@ const createQuotationTitle = (reference: string, date: string) => {
       ]
     }),
     new Paragraph({
-      spacing: { before: STYLES.spacing.normal, after: STYLES.spacing.normal },
+      spacing: { before: 0, after: 10 },
       children: [
         new TextRun({ 
           text: `Ref No: ${reference}`,
-          ...STYLES.fonts.normal
+          ...STYLES.fonts.tableSmall
         }),
         new TextRun({ 
           text: `\tDate: ${formatDate(date)}`,
-          ...STYLES.fonts.normal
+          ...STYLES.fonts.tableSmall
         })
       ]
     })
@@ -307,7 +307,7 @@ const createSignatureSection = () => {
                     bold: true
                   })
                 ],
-                spacing: { before: 800, after: 800 }
+                spacing: { before: 200, after: 100 }
               }),
               new Paragraph({
                 children: [
@@ -316,7 +316,8 @@ const createSignatureSection = () => {
                     ...STYLES.fonts.normal,
                     italics: true
                   })
-                ]
+                ],
+                spacing: { before: 0, after: 0 }
               })
             ]
           })
@@ -348,7 +349,7 @@ const createContactPersonTable = (data: any) => {
                   })
                 ],
                 alignment: AlignmentType.CENTER,
-                spacing: { before: STYLES.spacing.tiny, after: STYLES.spacing.tiny }
+                spacing: { before: 10, after: 10 }
               })
             ],
             shading: {
@@ -371,7 +372,7 @@ const createContactPersonTable = (data: any) => {
                     ...STYLES.fonts.tableSmall
                   })
                 ],
-                spacing: { before: STYLES.spacing.tiny, after: STYLES.spacing.tiny }
+                spacing: { before: 10, after: 10 }
               })
             ]
           })
@@ -390,11 +391,11 @@ const createContactPersonTable = (data: any) => {
                     bold: true
                   }),
                   new TextRun({
-                    text: data.employee.mobile || '',
+                    text: data.employee.phone || '',
                     ...STYLES.fonts.tableSmall
                   })
                 ],
-                spacing: { before: STYLES.spacing.tiny, after: STYLES.spacing.tiny }
+                spacing: { before: 10, after: 10 }
               })
             ]
           })
@@ -417,7 +418,7 @@ const createContactPersonTable = (data: any) => {
                     ...STYLES.fonts.tableSmall
                   })
                 ],
-                spacing: { before: STYLES.spacing.tiny, after: STYLES.spacing.tiny }
+                spacing: { before: 10, after: 10 }
               })
             ]
           })
@@ -461,7 +462,7 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
         properties: {
           page: {
             margin: {
-              top: convertInchesToTwip(0.2),
+              top: convertInchesToTwip(0.15),
               right: convertInchesToTwip(0.2),
               bottom: convertInchesToTwip(0.2),
               left: convertInchesToTwip(0.2),
@@ -486,7 +487,8 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
             text: "QUOTATION/PERFORMA INVOICE",
             alignment: AlignmentType.CENTER,
             spacing: {
-              after: 200,
+              before: 0,
+              after: 0,
             },
             style: {
               ...STYLES.fonts.header,
@@ -496,7 +498,7 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
 
           ...createQuotationTitle(data.quotationRef, data.quotationDate),
 
-          new Paragraph({ text: '', spacing: { after: 200 } }),
+          new Paragraph({ text: '', spacing: { before: 0, after: 20 } }),
 
           // To Table (Client Details)
           new Table({
@@ -519,7 +521,7 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
                           })
                         ],
                         alignment: AlignmentType.CENTER,
-                        spacing: { before: STYLES.spacing.tiny, after: STYLES.spacing.tiny }
+                        spacing: { before: 10, after: 10 }
                       })
                     ],
                     shading: {
@@ -543,7 +545,7 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
                             ...STYLES.fonts.tableSmall
                           })
                         ],
-                        spacing: { before: STYLES.spacing.tiny, after: STYLES.spacing.tiny }
+                        spacing: { before: 10, after: 10 }
                       })
                     ]
                   })
@@ -561,7 +563,7 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
                             ...STYLES.fonts.tableSmall
                           })
                         ],
-                        spacing: { before: STYLES.spacing.tiny, after: STYLES.spacing.tiny }
+                        spacing: { before: 10, after: 10 }
                       })
                     ]
                   })
@@ -600,7 +602,7 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
                             ...STYLES.fonts.tableSmall
                           })
                         ],
-                        spacing: { before: STYLES.spacing.tiny, after: STYLES.spacing.tiny }
+                        spacing: { before: 10, after: 10 }
                       })
                     ]
                   })
@@ -609,7 +611,7 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
             ]
           }),
 
-          new Paragraph({ text: '', spacing: { after: 200 } }),
+          new Paragraph({ text: '', spacing: { before: 0, after: 20 } }),
 
           // Greetings text
           new Paragraph({
@@ -619,7 +621,7 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
                 ...STYLES.fonts.tableSmall
               })
             ],
-            spacing: { after: STYLES.spacing.normal }
+            spacing: { before: 0, after: STYLES.spacing.tiny }
           }),
           new Paragraph({
             children: [
@@ -628,7 +630,7 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
                 ...STYLES.fonts.tableSmall
               })
             ],
-            spacing: { after: STYLES.spacing.normal }
+            spacing: { before: 0, after: STYLES.spacing.small }
           }),
 
           // Items table
@@ -648,32 +650,32 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
                   'S.No', 'Cat No.', 'Description', 'Pack Size', 'HSN Code', 'Qty', 'Unit Rate',
                   'Discount %', 'Discounted Price', 'Expanded Price', 'GST %', 'GST Value', 'Total', 'Lead Time', 'Make'
                 ].map((header, index) => {
-                  // Define column widths based on content type
+                  // Define column widths based on screenshot
                   let columnWidth = 8; // default width
                   switch(header) {
                     case 'S.No':
-                      columnWidth = 3;  // Smaller width for S.No
+                      columnWidth = 4;  // Smaller width for S.No
                       break;
                     case 'Cat No.':
-                      columnWidth = 5;  // Slightly wider for Cat No.
+                      columnWidth = 6;  // Slightly wider for Cat No.
                       break;
                     case 'Description':
-                      columnWidth = 25; // Much wider for Description
+                      columnWidth = 20; // Much wider for Description
                       break;
                     case 'Pack Size':
-                      columnWidth = 5;  // Medium width for Pack Size
+                      columnWidth = 6;  // Medium width for Pack Size
                       break;
                     case 'HSN Code':
                       columnWidth = 6;  // Medium width for HSN Code
                       break;
                     case 'Qty':
-                      columnWidth = 3;  // Small width for Qty
+                      columnWidth = 4;  // Small width for Qty
                       break;
                     case 'Unit Rate':
                       columnWidth = 8;  // Wider for monetary values
                       break;
                     case 'Discount %':
-                      columnWidth = 5;  // Small width for percentage
+                      columnWidth = 6;  // Small width for percentage
                       break;
                     case 'Discounted Price':
                       columnWidth = 8;  // Wider for monetary values
@@ -682,28 +684,31 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
                       columnWidth = 8;  // Wider for monetary values
                       break;
                     case 'GST %':
-                      columnWidth = 4;  // Small width for percentage
+                      columnWidth = 5;  // Small width for percentage
                       break;
                     case 'GST Value':
-                      columnWidth = 4;  // Reduced width for GST Value
+                      columnWidth = 6;  // Width for GST Value
                       break;
                     case 'Total':
-                      columnWidth = 6;  // Reduced width for Total
+                      columnWidth = 6;  // Width for Total
                       break;
                     case 'Lead Time':
-                      columnWidth = 8;  // Increased width for lead time
+                      columnWidth = 7;  // Width for lead time
                       break;
                     case 'Make':
-                      columnWidth = 7;  // Increased width for make
+                      columnWidth = 6;  // Width for make
                       break;
                   }
 
-                  // Determine text alignment based on column content
-                  const shouldCenter = true; // Center align all headers
-
                   return new TableCell({
+                    borders: {
+                      top: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                      bottom: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                      left: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                      right: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                    },
                     shading: {
-                      fill: COLORS.header,  // Use consistent header color
+                      fill: COLORS.header,
                       type: ShadingType.CLEAR,
                       color: "auto"
                     },
@@ -713,13 +718,9 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
                     },
                     children: [
                       new Paragraph({
-                        alignment: shouldCenter
-                          ? AlignmentType.CENTER
-                          : [6, 8, 9, 11, 12].includes(index)  // Monetary values
-                            ? AlignmentType.RIGHT
-                            : AlignmentType.LEFT,
+                        alignment: AlignmentType.CENTER,
                         children: [
-                          new TextRun({ 
+                          new TextRun({
                             text: header,
                             bold: true,
                             color: "FFFFFF",
@@ -733,13 +734,9 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
               }),
               // Data rows
               ...data.items.map((item, index) => {
-                // Calculate discounted price (Unit Rate - Discount %)
                 const discountedPrice = Number((item.unit_rate * (1 - item.discount_percent / 100)).toFixed(2));
-                // Calculate expanded price (Discounted Price * Qty)
                 const expandedPrice = Number((discountedPrice * item.qty).toFixed(2));
-                // Calculate GST on expanded price
                 const gstValue = Number((expandedPrice * (item.gst_percent / 100)).toFixed(2));
-                // Calculate total price
                 const totalPrice = Number((expandedPrice + gstValue).toFixed(2));
                 
                 return new TableRow({
@@ -760,38 +757,32 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
                     item.lead_time || '',
                     item.make || ''
                   ].map((text, colIndex) => {
-                    // Determine if this column should be centered
-                    const shouldCenter = [0, 1, 3, 4, 5, 7, 10].includes(colIndex);
-                    
                     return new TableCell({
-                      shading: {
-                        fill: index % 2 === 0 ? COLORS.light : "FFFFFF",
-                        type: ShadingType.CLEAR,
-                        color: "auto"
+                      borders: {
+                        top: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                        bottom: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                        left: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                        right: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
                       },
                       width: {
-                        size: colIndex === 2 ? 25 : // Description
-                              colIndex === 0 ? 3 :  // S.No
-                              colIndex === 1 ? 5 :  // Cat No.
-                              colIndex === 3 ? 5 :  // Pack Size
+                        size: colIndex === 0 ? 4 :  // S.No
+                              colIndex === 1 ? 6 :  // Cat No.
+                              colIndex === 2 ? 20 : // Description
+                              colIndex === 3 ? 6 :  // Pack Size
                               colIndex === 4 ? 6 :  // HSN Code
-                              colIndex === 5 ? 3 :  // Qty
+                              colIndex === 5 ? 4 :  // Qty
                               [6, 8, 9].includes(colIndex) ? 8 :  // Unit Rate, Discounted Price, Expanded Price
-                              [7, 10].includes(colIndex) ? 5 :  // Discount %, GST %
-                              colIndex === 11 ? 4 :  // GST Value
-                              colIndex === 12 ? 6 :  // Total
-                              colIndex === 13 ? 8 :  // Lead Time
-                              colIndex === 14 ? 7 : 8,  // Make
+                              colIndex === 7 ? 6 :  // Discount %
+                              colIndex === 10 ? 5 : // GST %
+                              [11, 12].includes(colIndex) ? 6 :  // GST Value, Total
+                              colIndex === 13 ? 7 :  // Lead Time
+                              6,  // Make
                         type: WidthType.PERCENTAGE
                       },
-                      verticalAlign: "center",
+                      verticalAlign: VerticalAlign.CENTER,
                       children: [
                         new Paragraph({
-                          alignment: shouldCenter
-                            ? AlignmentType.CENTER
-                            : [6, 8, 9, 11, 12].includes(colIndex)  // Monetary values
-                              ? AlignmentType.RIGHT
-                              : AlignmentType.LEFT,
+                          alignment: [6, 8, 9, 11, 12].includes(colIndex) ? AlignmentType.RIGHT : AlignmentType.CENTER,
                           children: [
                             new TextRun({
                               text: text,
@@ -806,18 +797,27 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
               })
             ]
           }),
-          new Paragraph({ text: '' }),
 
-          // Totals table
+          // Add spacing between tables
+          new Paragraph({
+            spacing: { before: 100, after: 100 }
+          }),
+
+          // Total calculations table
           new Table({
-            width: { size: 40, type: WidthType.PERCENTAGE },
+            width: { size: 35, type: WidthType.PERCENTAGE }, // Slightly smaller width
             alignment: AlignmentType.RIGHT,
             borders: STYLES.borders.thin,
-            cellMargin: STYLES.cellMarginSmall,
             rows: [
               new TableRow({
                 children: [
                   new TableCell({
+                    borders: {
+                      top: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                      bottom: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                      left: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                      right: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                    },
                     children: [new Paragraph({ 
                       children: [new TextRun({ 
                         text: 'Sub Total:', 
@@ -826,6 +826,12 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
                     })]
                   }),
                   new TableCell({
+                    borders: {
+                      top: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                      bottom: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                      left: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                      right: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                    },
                     children: [new Paragraph({ 
                       alignment: AlignmentType.RIGHT,
                       children: [new TextRun({ 
@@ -839,6 +845,12 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
               new TableRow({
                 children: [
                   new TableCell({
+                    borders: {
+                      top: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                      bottom: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                      left: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                      right: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                    },
                     children: [new Paragraph({ 
                       children: [new TextRun({ 
                         text: 'GST Total:', 
@@ -847,6 +859,12 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
                     })]
                   }),
                   new TableCell({
+                    borders: {
+                      top: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                      bottom: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                      left: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                      right: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                    },
                     children: [new Paragraph({ 
                       alignment: AlignmentType.RIGHT,
                       children: [new TextRun({ 
@@ -860,6 +878,12 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
               new TableRow({
                 children: [
                   new TableCell({
+                    borders: {
+                      top: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                      bottom: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                      left: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                      right: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                    },
                     children: [new Paragraph({ 
                       children: [new TextRun({ 
                         text: 'Grand Total:', 
@@ -869,6 +893,12 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
                     })]
                   }),
                   new TableCell({
+                    borders: {
+                      top: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                      bottom: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                      left: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                      right: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                    },
                     children: [new Paragraph({ 
                       alignment: AlignmentType.RIGHT,
                       children: [new TextRun({ 
@@ -882,232 +912,183 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
               })
             ]
           }),
-          new Paragraph({ text: '' }),
 
-          // Bank Details
-          new Table({
-            width: { size: 100, type: WidthType.PERCENTAGE },
-            borders: STYLES.borders.thin,
-            cellMargin: STYLES.cellMarginSmall,
-            rows: [
-              // Header Row
-              new TableRow({
-                children: [
-                  new TableCell({
-                    children: [
-                      new Paragraph({
-                        children: [
-                          new TextRun({
-                            text: "Bank Details",
-                            color: "FFFFFF",
-                            bold: true,
-                            ...STYLES.fonts.tableSmall
-                          })
-                        ],
-                        alignment: AlignmentType.CENTER,
-                        spacing: { before: STYLES.spacing.tiny, after: STYLES.spacing.tiny }
-                      })
-                    ],
-                    shading: {
-                      fill: COLORS.header,  // Use consistent header color
-                      type: ShadingType.CLEAR,
-                      color: "auto"
-                    }
-                  })
-                ]
-              }),
-              // Bank Name Row
-              new TableRow({
-                children: [
-                  new TableCell({
-                    children: [
-                      new Paragraph({
-                        children: [
-                          new TextRun({
-                            text: "Bank Name: HDFC BANK",
-                            ...STYLES.fonts.tableSmall
-                          })
-                        ],
-                        spacing: { before: STYLES.spacing.tiny, after: STYLES.spacing.tiny }
-                      })
-                    ]
-                  })
-                ]
-              }),
-              // Account Details Row
-              new TableRow({
-                children: [
-                  new TableCell({
-                    children: [
-                      new Paragraph({
-                        children: [
-                          new TextRun({
-                            text: "Account No.: 50200069668619",
-                            ...STYLES.fonts.tableSmall
-                          })
-                        ],
-                        spacing: { before: STYLES.spacing.tiny, after: STYLES.spacing.tiny }
-                      })
-                    ]
-                  })
-                ]
-              }),
-              // IFSC Row
-              new TableRow({
-                children: [
-                  new TableCell({
-                    children: [
-                      new Paragraph({
-                        children: [
-                          new TextRun({
-                            text: "IFSC Code: HDFC0001372",
-                            ...STYLES.fonts.tableSmall
-                          })
-                        ],
-                        spacing: { before: STYLES.spacing.tiny, after: STYLES.spacing.tiny }
-                      })
-                    ]
-                  })
-                ]
-              }),
-              // Branch Row
-              new TableRow({
-                children: [
-                  new TableCell({
-                    children: [
-                      new Paragraph({
-                        children: [
-                          new TextRun({
-                            text: "Branch: Indirapuram, Ghaziabad",
-                            ...STYLES.fonts.tableSmall
-                          })
-                        ],
-                        spacing: { before: STYLES.spacing.tiny, after: STYLES.spacing.tiny }
-                      })
-                    ]
-                  })
-                ]
+          // Bank Details section
+          new Paragraph({
+            spacing: { before: 200, after: 0 },
+            children: [
+              new TextRun({
+                text: "Bank Details",
+                color: "FFFFFF",
+                bold: true,
+                ...STYLES.fonts.tableSmall
               })
-            ]
+            ],
+            shading: {
+              fill: COLORS.header,
+              type: ShadingType.CLEAR,
+              color: "auto"
+            }
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "Bank Name: HDFC BANK",
+                ...STYLES.fonts.tableSmall
+              })
+            ],
+            spacing: { before: 0, after: 0 }
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "Account No.: 50200069668619",
+                ...STYLES.fonts.tableSmall
+              })
+            ],
+            spacing: { before: 0, after: 0 }
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "IFSC Code: HDFC0001372",
+                ...STYLES.fonts.tableSmall
+              })
+            ],
+            spacing: { before: 0, after: 0 }
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "Branch: Indirapuram, Ghaziabad",
+                ...STYLES.fonts.tableSmall
+              })
+            ],
+            spacing: { before: 0, after: 200 }
           }),
 
-          new Paragraph({ text: '', spacing: { after: 200 } }),
-
-          // Terms & Conditions Table
-          new Table({
-            width: { size: 100, type: WidthType.PERCENTAGE },
-            borders: STYLES.borders.thin,
-            cellMargin: STYLES.cellMarginSmall,
-            rows: [
-              // Header Row
-              new TableRow({
-                children: [
-                  new TableCell({
-                    children: [
-                      new Paragraph({
-                        children: [
-                          new TextRun({
-                            text: "Terms & Conditions",
-                            color: "FFFFFF",
-                            bold: true,
-                            ...STYLES.fonts.tableSmall
-                          })
-                        ],
-                        alignment: AlignmentType.CENTER,
-                        spacing: { before: STYLES.spacing.tiny, after: STYLES.spacing.tiny }
-                      })
-                    ],
-                    shading: {
-                      fill: COLORS.header,  // Use consistent header color
-                      type: ShadingType.CLEAR,
-                      color: "auto"
-                    }
-                  })
-                ]
-              }),
-              // Payment Row
-              new TableRow({
-                children: [
-                  new TableCell({
-                    children: [
-                      new Paragraph({
-                        children: [
-                          new TextRun({
-                            text: "1. Payment: 100% Advance",
-                            ...STYLES.fonts.tableSmall
-                          })
-                        ],
-                        spacing: { before: STYLES.spacing.tiny, after: STYLES.spacing.tiny }
-                      })
-                    ]
-                  })
-                ]
-              }),
-              // Validity Row
-              new TableRow({
-                children: [
-                  new TableCell({
-                    children: [
-                      new Paragraph({
-                        children: [
-                          new TextRun({
-                            text: "2. Validity: 30 Days",
-                            ...STYLES.fonts.tableSmall
-                          })
-                        ],
-                        spacing: { before: STYLES.spacing.tiny, after: STYLES.spacing.tiny }
-                      })
-                    ]
-                  })
-                ]
-              }),
-              // Delivery Row
-              new TableRow({
-                children: [
-                  new TableCell({
-                    children: [
-                      new Paragraph({
-                        children: [
-                          new TextRun({
-                            text: "3. Delivery: Ex-Stock / As Specified",
-                            ...STYLES.fonts.tableSmall
-                          })
-                        ],
-                        spacing: { before: STYLES.spacing.tiny, after: STYLES.spacing.tiny }
-                      })
-                    ]
-                  })
-                ]
-              }),
-              // GST Row
-              new TableRow({
-                children: [
-                  new TableCell({
-                    children: [
-                      new Paragraph({
-                        children: [
-                          new TextRun({
-                            text: "4. GST: Extra as applicable",
-                            ...STYLES.fonts.tableSmall
-                          })
-                        ],
-                        spacing: { before: STYLES.spacing.tiny, after: STYLES.spacing.tiny }
-                      })
-                    ]
-                  })
-                ]
+          // Terms & Conditions section
+          new Paragraph({
+            spacing: { before: 0, after: 0 },
+            children: [
+              new TextRun({
+                text: "Terms & Conditions",
+                color: "FFFFFF",
+                bold: true,
+                ...STYLES.fonts.tableSmall
               })
-            ]
+            ],
+            shading: {
+              fill: COLORS.header,
+              type: ShadingType.CLEAR,
+              color: "auto"
+            }
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "1. Validity: 30 Days",
+                ...STYLES.fonts.tableSmall
+              })
+            ],
+            spacing: { before: 0, after: 0 }
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "2. Payment Terms: 100% Advance",
+                ...STYLES.fonts.tableSmall
+              })
+            ],
+            spacing: { before: 0, after: 0 }
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "3. Delivery: Within 7 Days after receipt of PO & Payment",
+                ...STYLES.fonts.tableSmall
+              })
+            ],
+            spacing: { before: 0, after: 200 }
           }),
 
-          new Paragraph({ text: '', spacing: { after: 200 } }),
+          // Contact Person section
+          new Paragraph({
+            spacing: { before: 0, after: 0 },
+            children: [
+              new TextRun({
+                text: "Contact Person",
+                color: "FFFFFF",
+                bold: true,
+                ...STYLES.fonts.tableSmall
+              })
+            ],
+            shading: {
+              fill: COLORS.header,
+              type: ShadingType.CLEAR,
+              color: "auto"
+            }
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: data.employee.name || '',
+                ...STYLES.fonts.tableSmall
+              })
+            ],
+            spacing: { before: 0, after: 0 }
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "Mobile: ",
+                bold: true,
+                ...STYLES.fonts.tableSmall
+              }),
+              new TextRun({
+                text: data.employee.phone || '',
+                ...STYLES.fonts.tableSmall
+              })
+            ],
+            spacing: { before: 0, after: 0 }
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "Email: ",
+                bold: true,
+                ...STYLES.fonts.tableSmall
+              }),
+              new TextRun({
+                text: data.employee.email || '',
+                ...STYLES.fonts.tableSmall
+              })
+            ],
+            spacing: { before: 0, after: 200 }
+          }),
 
-          createContactPersonTable(data),
-
-          new Paragraph({ text: '', spacing: { after: 200 } }),
-
-          // Add signature section
-          createSignatureSection(),
+          // For CHEMBIO LIFESCIENCES signature
+          new Paragraph({
+            alignment: AlignmentType.RIGHT,
+            children: [
+              new TextRun({
+                text: "For CHEMBIO LIFESCIENCES",
+                bold: true,
+                ...STYLES.fonts.tableSmall
+              })
+            ],
+            spacing: { before: 0, after: 0 }
+          }),
+          new Paragraph({
+            alignment: AlignmentType.RIGHT,
+            children: [
+              new TextRun({
+                text: "Authorized Signatory",
+                ...STYLES.fonts.tableSmall
+              })
+            ],
+            spacing: { before: 0, after: 0 }
+          }),
 
           // Add empty paragraph for spacing
           new Paragraph({ text: '', spacing: { after: 400 } }),
