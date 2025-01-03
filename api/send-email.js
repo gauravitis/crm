@@ -3,10 +3,23 @@ import { Resend } from 'resend';
 // Initialize Resend
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// Allowed origins
+const allowedOrigins = [
+  'https://crm-gamma-seven.vercel.app',
+  'https://crm.chembiolifescience.com',
+  'http://localhost:3000'
+];
+
 export default async function handler(req, res) {
-  // Set CORS headers
+  // Get the request origin
+  const origin = req.headers.origin;
+  
+  // Check if the origin is allowed
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  
   res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
   res.setHeader(
     'Access-Control-Allow-Headers',

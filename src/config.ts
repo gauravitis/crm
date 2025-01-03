@@ -28,8 +28,8 @@ const RESEND_API_KEY = import.meta.env.VITE_RESEND_API_KEY ||
 
 export const config: Config = {
   apiBaseUrl: process.env.NODE_ENV === 'production' 
-    ? 'https://crm.chembiolifescience.com/api' 
-    : 'http://localhost:3001/api',
+    ? 'https://crm-gamma-seven.vercel.app/api'  
+    : 'http://localhost:3000/api',
   resend: {
     apiKey: RESEND_API_KEY || '',
   },
