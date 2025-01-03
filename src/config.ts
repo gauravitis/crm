@@ -13,6 +13,7 @@ interface Config {
   sentry: {
     dsn: string;
   };
+  apiBaseUrl: string;
 }
 
 // Debug: Log all environment variables
@@ -26,6 +27,9 @@ const RESEND_API_KEY = import.meta.env.VITE_RESEND_API_KEY ||
                       (typeof window !== 'undefined' ? window.__ENV__?.VITE_RESEND_API_KEY : undefined);
 
 export const config: Config = {
+  apiBaseUrl: process.env.NODE_ENV === 'production' 
+    ? 'https://crm.chembiolifescience.com/api' 
+    : 'http://localhost:3001/api',
   resend: {
     apiKey: RESEND_API_KEY || '',
   },
@@ -65,6 +69,7 @@ const validateConfig = () => {
   console.log('Config validation results:', {
     missingVariables: missingVars,
     currentConfig: {
+      apiBaseUrl: config.apiBaseUrl,
       resend: { apiKey: config.resend.apiKey ? '[REDACTED]' : 'missing' },
       firebase: {
         apiKey: config.firebase.apiKey ? '[REDACTED]' : 'missing',

@@ -1,6 +1,6 @@
-import config from '../config';
+import { config } from '../config';
 
-export const emailService = {
+class EmailService {
   async sendQuotation(options: {
     to: string;
     quotationRef: string;
@@ -10,7 +10,7 @@ export const emailService = {
     fromName?: string;
   }) {
     try {
-      const response = await fetch('http://localhost:3001/api/send-email', {
+      const response = await fetch(`${config.apiBaseUrl}/send-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -29,4 +29,6 @@ export const emailService = {
       throw error;
     }
   }
-};
+}
+
+export const emailService = new EmailService();
