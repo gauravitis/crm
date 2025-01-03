@@ -1,7 +1,14 @@
 import { Resend } from 'resend';
 
+// Try to get the API key from different environment variables
+const apiKey = process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY;
+
+if (!apiKey) {
+  console.error('No Resend API key found in environment variables');
+}
+
 // Initialize Resend with error checking
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(apiKey);
 
 // Allowed origins
 const allowedOrigins = [
