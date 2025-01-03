@@ -300,24 +300,26 @@ const createSignatureSection = () => {
             width: { size: 100, type: WidthType.PERCENTAGE },
             children: [
               new Paragraph({
+                alignment: AlignmentType.RIGHT,
                 children: [
                   new TextRun({
                     text: "For CHEMBIO LIFESCIENCES",
-                    ...STYLES.fonts.normal,
-                    bold: true
+                    bold: true,
+                    ...STYLES.fonts.tableSmall
                   })
                 ],
-                spacing: { before: 200, after: 100 }
+                spacing: { before: 200, after: 400 }  // Added significant space for signature
               }),
               new Paragraph({
+                alignment: AlignmentType.RIGHT,
                 children: [
                   new TextRun({
                     text: "Authorized Signatory",
-                    ...STYLES.fonts.normal,
-                    italics: true
+                    bold: true,
+                    ...STYLES.fonts.tableSmall
                   })
                 ],
-                spacing: { before: 0, after: 0 }
+                spacing: { before: 0, after: 200 }
               })
             ]
           })
@@ -1048,17 +1050,18 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
                 ...STYLES.fonts.tableSmall
               })
             ],
-            spacing: { before: 0, after: 0 }
+            spacing: { before: 200, after: 400 }  // Added significant space for signature
           }),
           new Paragraph({
             alignment: AlignmentType.RIGHT,
             children: [
               new TextRun({
                 text: "Authorized Signatory",
+                bold: true,
                 ...STYLES.fonts.tableSmall
               })
             ],
-            spacing: { before: 0, after: 0 }
+            spacing: { before: 0, after: 200 }
           }),
 
           // Add empty paragraph for spacing
