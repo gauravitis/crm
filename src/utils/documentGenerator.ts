@@ -902,119 +902,90 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
 
           // Bank Details section
           new Paragraph({
-            spacing: { before: 200, after: 0 },
             children: [
               new TextRun({
                 text: "Bank Details",
-                color: "FFFFFF",
                 bold: true,
+                color: "FFFFFF",
                 ...STYLES.fonts.tableSmall
               })
             ],
             shading: {
-              fill: COLORS.header,
               type: ShadingType.CLEAR,
-              color: "auto"
-            }
+              color: "auto",
+              fill: COLORS.header
+            },
+            spacing: { before: 200, after: 100 }
           }),
           new Paragraph({
             children: [
               new TextRun({
-                text: "Bank Name: HDFC BANK",
+                text: "HDFC BANK LTD.\n",
                 ...STYLES.fonts.tableSmall
-              })
-            ],
-            spacing: { before: 0, after: 0 }
-          }),
-          new Paragraph({
-            children: [
+              }),
               new TextRun({
-                text: "Account No.: 50200069668619",
+                text: "Account No: 50200017511430 ; NEFT/RTGS IFCS : HDFC0000590\n",
                 ...STYLES.fonts.tableSmall
-              })
-            ],
-            spacing: { before: 0, after: 0 }
-          }),
-          new Paragraph({
-            children: [
+              }),
               new TextRun({
-                text: "IFSC Code: HDFC0001372",
+                text: "Branch code:0590 ; Micro code : 110240081 ;Account type: Current account",
                 ...STYLES.fonts.tableSmall
               })
             ],
-            spacing: { before: 0, after: 0 }
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: "Branch: Indirapuram, Ghaziabad",
-                ...STYLES.fonts.tableSmall
-              })
-            ],
-            spacing: { before: 0, after: 200 }
+            spacing: { before: 100, after: 200 }
           }),
 
           // Terms & Conditions section
           new Paragraph({
-            spacing: { before: 0, after: 0 },
             children: [
               new TextRun({
                 text: "Terms & Conditions",
-                color: "FFFFFF",
                 bold: true,
+                color: "FFFFFF",
                 ...STYLES.fonts.tableSmall
               })
             ],
             shading: {
-              fill: COLORS.header,
               type: ShadingType.CLEAR,
-              color: "auto"
-            }
+              color: "auto",
+              fill: COLORS.header
+            },
+            spacing: { before: 200, after: 100 }
           }),
           new Paragraph({
             children: [
               new TextRun({
-                text: "1. Validity: 30 Days",
+                text: "1) Payment: 100% Payment within 30 days\n",
                 ...STYLES.fonts.tableSmall
-              })
-            ],
-            spacing: { before: 0, after: 0 }
-          }),
-          new Paragraph({
-            children: [
+              }),
               new TextRun({
-                text: "2. Payment Terms: 100% Advance",
+                text: "2) Validity: 30 days\n",
                 ...STYLES.fonts.tableSmall
-              })
-            ],
-            spacing: { before: 0, after: 0 }
-          }),
-          new Paragraph({
-            children: [
+              }),
               new TextRun({
-                text: "3. Delivery: Within 7 Days after receipt of PO & Payment",
+                text: "3) Lead time : 1-2 Weeks",
                 ...STYLES.fonts.tableSmall
               })
             ],
-            spacing: { before: 0, after: 200 }
+            spacing: { before: 100, after: 200 }
           }),
 
-          // Contact Person section
+          // Contact Person section (renamed to "Quotation Created By")
           new Paragraph({
-            spacing: { before: 0, after: 0 },
             children: [
               new TextRun({
-                text: "Contact Person",
-                color: "FFFFFF",
+                text: "Quotation Created By",
                 bold: true,
+                color: "FFFFFF",
                 ...STYLES.fonts.tableSmall
               })
             ],
             shading: {
-              fill: COLORS.header,
               type: ShadingType.CLEAR,
-              color: "auto"
-            }
+              color: "auto",
+              fill: COLORS.header
+            },
+            spacing: { before: 200, after: 100 }
           }),
           new Paragraph({
             children: [
@@ -1023,7 +994,7 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
                 ...STYLES.fonts.tableSmall
               })
             ],
-            spacing: { before: 0, after: 0 }
+            spacing: { before: 100, after: 0 }
           }),
           new Paragraph({
             children: [
