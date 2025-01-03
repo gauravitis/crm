@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
 
-// Initialize Resend
+// Initialize Resend with error checking
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Allowed origins
@@ -11,6 +11,8 @@ const allowedOrigins = [
 ];
 
 export default async function handler(req, res) {
+  console.log('API Route Handler Called', { method: req.method });
+
   // Get the request origin
   const origin = req.headers.origin;
   
@@ -20,33 +22,37 @@ export default async function handler(req, res) {
   }
   
   res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader(
     'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+    'Content-Type, Authorization'
   );
 
   // Handle preflight request
   if (req.method === 'OPTIONS') {
-    res.status(200).end();
+    res.status(200).json({ message: 'OK' });
     return;
   }
 
   // Only allow POST requests
   if (req.method !== 'POST') {
+    console.log('Method not allowed:', req.method);
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
   try {
+    console.log('Processing email request');
     const { to, quotationRef, clientName, documentData, filename, fromName } = req.body;
 
     if (!to || !quotationRef || !documentData) {
+      console.log('Missing required fields');
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
     // Convert base64 to Buffer
     const buffer = Buffer.from(documentData, 'base64');
 
+    console.log('Sending email to:', to);
     const response = await resend.emails.send({
       from: `${fromName || 'CBL'} <quotations@cbl.com>`,
       to: [to],
@@ -69,9 +75,14 @@ export default async function handler(req, res) {
       ]
     });
 
-    res.status(200).json({ message: 'Email sent successfully', data: response });
+    console.log('Email sent successfully:', response);
+    return res.status(200).json({ message: 'Email sent successfully', data: response });
   } catch (error) {
     console.error('Error sending email:', error);
-    res.status(500).json({ message: 'Failed to send email', error: error.message });
+    return res.status(500).json({ 
+      message: 'Failed to send email', 
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 }
