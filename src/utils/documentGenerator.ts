@@ -254,7 +254,7 @@ const createQuotationTitle = (reference: string, date: string) => {
       spacing: { before: STYLES.spacing.tiny, after: STYLES.spacing.tiny },
       children: [
         new TextRun({ 
-          text: 'QUOTATION',
+          text: 'QUOTATION/PERFORMA INVOICE',
           bold: true,
           ...STYLES.fonts.header
         })
@@ -483,19 +483,6 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
         },
         children: [
           createHeaderContent(),
-          new Paragraph({
-            text: "QUOTATION/PERFORMA INVOICE",
-            alignment: AlignmentType.CENTER,
-            spacing: {
-              before: 0,
-              after: 0,
-            },
-            style: {
-              ...STYLES.fonts.header,
-              size: 28,
-            }
-          }),
-
           ...createQuotationTitle(data.quotationRef, data.quotationDate),
 
           new Paragraph({ text: '', spacing: { before: 0, after: 20 } }),
@@ -520,7 +507,7 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
                             ...STYLES.fonts.tableSmall
                           })
                         ],
-                        alignment: AlignmentType.CENTER,
+                        alignment: AlignmentType.LEFT,
                         spacing: { before: 10, after: 10 }
                       })
                     ],
