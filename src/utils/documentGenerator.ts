@@ -952,22 +952,35 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
             },
             spacing: { before: 200, after: 100 }
           }),
+          // First term
           new Paragraph({
             children: [
               new TextRun({
-                text: "1) Payment: 100% Payment within 30 days\n",
+                text: "1) Payment: 100% Payment within 30 days",
                 ...STYLES.fonts.tableSmall
-              }),
+              })
+            ],
+            spacing: { before: 100, after: 50 }
+          }),
+          // Second term
+          new Paragraph({
+            children: [
               new TextRun({
-                text: "2) Validity: 30 days\n",
+                text: "2) Validity: 30 days",
                 ...STYLES.fonts.tableSmall
-              }),
+              })
+            ],
+            spacing: { before: 0, after: 50 }
+          }),
+          // Third term
+          new Paragraph({
+            children: [
               new TextRun({
                 text: "3) Lead time : 1-2 Weeks",
                 ...STYLES.fonts.tableSmall
               })
             ],
-            spacing: { before: 100, after: 200 }
+            spacing: { before: 0, after: 200 }
           }),
 
           // Contact Person section (renamed to "Quotation Created By")
