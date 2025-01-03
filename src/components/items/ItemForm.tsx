@@ -25,7 +25,7 @@ export default function ItemForm({ onSubmit, onCancel, initialData }: ItemFormPr
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
             <div className="space-y-4">
-              <Label htmlFor="name" className="text-base font-medium">Name</Label>
+              <Label htmlFor="name" className="text-base font-medium">Name *</Label>
               <Input
                 id="name"
                 {...register('name', { required: 'Name is required' })}
@@ -41,78 +41,60 @@ export default function ItemForm({ onSubmit, onCancel, initialData }: ItemFormPr
               <Label htmlFor="catalogueId" className="text-base font-medium">Catalogue ID</Label>
               <Input
                 id="catalogueId"
-                {...register('catalogueId', { required: 'Catalogue ID is required' })}
+                {...register('catalogueId')}
                 placeholder="Catalogue ID"
-                className={`h-12 text-lg ${errors.catalogueId ? 'border-red-500' : ''}`}
+                className="h-12 text-lg"
               />
-              {errors.catalogueId && (
-                <p className="text-sm text-red-500">{errors.catalogueId.message as string}</p>
-              )}
             </div>
 
             <div className="space-y-4">
               <Label htmlFor="casNumber" className="text-base font-medium">CAS Number</Label>
               <Input
                 id="casNumber"
-                {...register('casNumber', { required: 'CAS Number is required' })}
+                {...register('casNumber')}
                 placeholder="CAS Number"
-                className={`h-12 text-lg ${errors.casNumber ? 'border-red-500' : ''}`}
+                className="h-12 text-lg"
               />
-              {errors.casNumber && (
-                <p className="text-sm text-red-500">{errors.casNumber.message as string}</p>
-              )}
             </div>
 
             <div className="space-y-4">
               <Label htmlFor="sku" className="text-base font-medium">CAS</Label>
               <Input
                 id="sku"
-                {...register('sku', { required: 'CAS is required' })}
+                {...register('sku')}
                 placeholder="CAS"
-                className={`h-12 text-lg ${errors.sku ? 'border-red-500' : ''}`}
+                className="h-12 text-lg"
               />
-              {errors.sku && (
-                <p className="text-sm text-red-500">{errors.sku.message as string}</p>
-              )}
             </div>
 
             <div className="space-y-4">
               <Label htmlFor="packSize" className="text-base font-medium">Pack Size</Label>
               <Input
                 id="packSize"
-                {...register('packSize', { required: 'Pack Size is required' })}
+                {...register('packSize')}
                 placeholder="Pack Size"
-                className={`h-12 text-lg ${errors.packSize ? 'border-red-500' : ''}`}
+                className="h-12 text-lg"
               />
-              {errors.packSize && (
-                <p className="text-sm text-red-500">{errors.packSize.message as string}</p>
-              )}
             </div>
 
             <div className="space-y-4">
               <Label htmlFor="hsnCode" className="text-base font-medium">HSN Code</Label>
               <Input
                 id="hsnCode"
-                {...register('hsnCode', { required: 'HSN Code is required' })}
+                {...register('hsnCode')}
                 placeholder="HSN Code"
-                className={`h-12 text-lg ${errors.hsnCode ? 'border-red-500' : ''}`}
+                className="h-12 text-lg"
               />
-              {errors.hsnCode && (
-                <p className="text-sm text-red-500">{errors.hsnCode.message as string}</p>
-              )}
             </div>
 
             <div className="space-y-4">
               <Label htmlFor="batchNo" className="text-base font-medium">Batch Number</Label>
               <Input
                 id="batchNo"
-                {...register('batchNo', { required: 'Batch Number is required' })}
+                {...register('batchNo')}
                 placeholder="Batch Number"
-                className={`h-12 text-lg ${errors.batchNo ? 'border-red-500' : ''}`}
+                className="h-12 text-lg"
               />
-              {errors.batchNo && (
-                <p className="text-sm text-red-500">{errors.batchNo.message as string}</p>
-              )}
             </div>
 
             <div className="space-y-4">
@@ -139,17 +121,14 @@ export default function ItemForm({ onSubmit, onCancel, initialData }: ItemFormPr
               <Label htmlFor="brand" className="text-base font-medium">Brand</Label>
               <Input
                 id="brand"
-                {...register('brand', { required: 'Brand is required' })}
+                {...register('brand')}
                 placeholder="Brand"
-                className={`h-12 text-lg ${errors.brand ? 'border-red-500' : ''}`}
+                className="h-12 text-lg"
               />
-              {errors.brand && (
-                <p className="text-sm text-red-500">{errors.brand.message as string}</p>
-              )}
             </div>
 
             <div className="space-y-4">
-              <Label htmlFor="price" className="text-base font-medium">Price</Label>
+              <Label htmlFor="price" className="text-base font-medium">Price *</Label>
               <Input
                 id="price"
                 type="number"
@@ -166,7 +145,7 @@ export default function ItemForm({ onSubmit, onCancel, initialData }: ItemFormPr
             </div>
 
             <div className="space-y-4">
-              <Label htmlFor="quantity" className="text-base font-medium">Quantity</Label>
+              <Label htmlFor="quantity" className="text-base font-medium">Quantity *</Label>
               <Input
                 id="quantity"
                 type="number"
@@ -184,11 +163,11 @@ export default function ItemForm({ onSubmit, onCancel, initialData }: ItemFormPr
           </div>
 
           <div className="flex gap-4 pt-6">
-            <Button type="submit" className="flex-1 h-12 text-lg font-medium">
-              {initialData ? 'Update Item' : 'Create Item'}
-            </Button>
             <Button type="button" onClick={onCancel} variant="outline" className="flex-1 h-12 text-lg font-medium">
               Cancel
+            </Button>
+            <Button type="submit" className="flex-1 h-12 text-lg font-medium">
+              {initialData ? 'Update Item' : 'Create Item'}
             </Button>
           </div>
         </form>
