@@ -5,9 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "server": "node server.js",
     "build": "tsc && vite build",
-    "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
