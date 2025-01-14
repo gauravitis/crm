@@ -1,4 +1,4 @@
-import { generateQuotationRef } from '../utils/generateId';
+﻿import { generateQuotationRef } from '../utils/generateId';
 import React, { useEffect, useState, ChangeEvent } from 'react';
 import { Quotation, QuotationProduct } from '../types/quotation';
 import { format, parse } from 'date-fns';
@@ -398,16 +398,12 @@ export default function QuotationGenerator() {
   };
 
   const updateTotals = (items: QuotationProduct[]) => {
-<<<<<<< HEAD
     const subTotal = items.reduce((sum, item) => {
       const baseAmount = item.qty * item.unit_rate;
       const discountAmount = baseAmount * (item.discount_percent / 100);
       const amountAfterDiscount = baseAmount - discountAmount;
       return sum + amountAfterDiscount;
     }, 0);
-=======
-    const subTotal = items.reduce((sum, item) => sum + (item.qty * item.unit_rate), 0);
->>>>>>> c7759322d01449463c85de6a8136862d8970dceb
     const totalTax = items.reduce((sum, item) => sum + item.gst_value, 0);
     const grandTotal = items.reduce((sum, item) => sum + item.total_price, 0);
 
@@ -1095,8 +1091,8 @@ export default function QuotationGenerator() {
                                     {!isNewItem && (
                                       <div className="text-sm text-gray-500 mt-1">
                                         {suggestion.packSize && `Pack Size: ${suggestion.packSize}`}
-                                        {suggestion.hsnCode && ` • HSN: ${suggestion.hsnCode}`}
-                                        {(suggestion.price ?? 0) > 0 && ` • Price: ₹${suggestion.price}`}
+                                        {suggestion.hsnCode && ` â€¢ HSN: ${suggestion.hsnCode}`}
+                                        {(suggestion.price ?? 0) > 0 && ` â€¢ Price: â‚¹${suggestion.price}`}
                                       </div>
                                     )}
                                     {isNewItem && (
@@ -1160,7 +1156,7 @@ export default function QuotationGenerator() {
                             className="text-base text-right min-w-[80px]"
                           />
                         </TableCell>
-                        <TableCell className="text-right font-medium">₹{item.discounted_value.toFixed(2)}</TableCell>
+                        <TableCell className="text-right font-medium">â‚¹{item.discounted_value.toFixed(2)}</TableCell>
                         <TableCell>
                           <Input
                             type="number"
@@ -1169,8 +1165,8 @@ export default function QuotationGenerator() {
                             className="text-base text-right min-w-[80px]"
                           />
                         </TableCell>
-                        <TableCell className="text-right font-medium">₹{item.gst_value.toFixed(2)}</TableCell>
-                        <TableCell className="text-right font-medium">₹{item.total_price.toFixed(2)}</TableCell>
+                        <TableCell className="text-right font-medium">â‚¹{item.gst_value.toFixed(2)}</TableCell>
+                        <TableCell className="text-right font-medium">â‚¹{item.total_price.toFixed(2)}</TableCell>
                         <TableCell>
                           <Input
                             type="text"
@@ -1203,15 +1199,15 @@ export default function QuotationGenerator() {
                   <TableFooter>
                     <TableRow>
                       <TableCell colSpan={11} className="text-right font-medium text-gray-600">Sub Total:</TableCell>
-                      <TableCell colSpan={4} className="text-right font-medium text-gray-600">₹{quotationData.subTotal.toFixed(2)}</TableCell>
+                      <TableCell colSpan={4} className="text-right font-medium text-gray-600">â‚¹{quotationData.subTotal.toFixed(2)}</TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell colSpan={11} className="text-right font-medium text-gray-600 border-t border-gray-200">Total GST:</TableCell>
-                      <TableCell colSpan={4} className="text-right font-medium text-gray-600 border-t border-gray-200">₹{quotationData.tax.toFixed(2)}</TableCell>
+                      <TableCell colSpan={4} className="text-right font-medium text-gray-600 border-t border-gray-200">â‚¹{quotationData.tax.toFixed(2)}</TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell colSpan={11} className="text-right font-semibold text-gray-900 border-t border-gray-200">Grand Total:</TableCell>
-                      <TableCell colSpan={4} className="text-right font-semibold text-gray-900 border-t border-gray-200">₹{quotationData.grandTotal.toFixed(2)}</TableCell>
+                      <TableCell colSpan={4} className="text-right font-semibold text-gray-900 border-t border-gray-200">â‚¹{quotationData.grandTotal.toFixed(2)}</TableCell>
                     </TableRow>
                   </TableFooter>
                 </Table>
@@ -1223,15 +1219,15 @@ export default function QuotationGenerator() {
               <div className="w-72 space-y-2">
                 <div className="flex justify-between items-center py-2 text-gray-600">
                   <span className="font-medium">Sub Total:</span>
-                  <span>₹{quotationData.subTotal.toFixed(2)}</span>
+                  <span>â‚¹{quotationData.subTotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center py-2 text-gray-600 border-t border-gray-200">
                   <span className="font-medium">Total GST:</span>
-                  <span>₹{quotationData.tax.toFixed(2)}</span>
+                  <span>â‚¹{quotationData.tax.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center py-2 text-gray-900 border-t border-gray-200">
                   <span className="font-semibold">Grand Total:</span>
-                  <span className="font-semibold">₹{quotationData.grandTotal.toFixed(2)}</span>
+                  <span className="font-semibold">â‚¹{quotationData.grandTotal.toFixed(2)}</span>
                 </div>
               </div>
             </div>
