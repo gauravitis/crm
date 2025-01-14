@@ -46,3 +46,10 @@ lerna-debug.log*
 
 # Vercel
 .vercel
+
+# Build output
+frontend/dist/
+
+# Backup files
+*.bak
+*.backup
