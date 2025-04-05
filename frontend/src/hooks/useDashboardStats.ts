@@ -3,14 +3,56 @@ import { collection, getDocs, query, orderBy, limit, where, Timestamp } from 'fi
 import { db } from '../config/firebase';
 import { startOfMonth, endOfMonth, subMonths, parseISO } from 'date-fns';
 
+// Add proper typings for the data from Firestore
+interface FirestoreClient {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: any;
+  [key: string]: any;
+}
+
+interface FirestoreItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  createdAt: any;
+  [key: string]: any;
+}
+
+interface FirestoreQuotation {
+  id: string;
+  quotationRef: string;
+  billTo: {
+    name: string;
+    [key: string]: any;
+  };
+  grandTotal: number;
+  status: string;
+  createdAt: any;
+  [key: string]: any;
+}
+
 interface DashboardStats {
   totalClients: number;
   totalItems: number;
   totalRevenue: number;
+  totalQuotations: number;
+  quotationStats: {
+    pending: number;
+    completed: number;
+    rejected: number;
+    total: number;
+    pendingValue: number;
+    growth: number;
+  };
   recentClients: Array<{ id: string; name: string; email: string; createdAt: Date }>;
   recentItems: Array<{ id: string; name: string; price: number; createdAt: Date }>;
+  recentQuotations: Array<{ id: string; ref: string; client: string; amount: number; status: string; date: Date }>;
   totalInventoryValue: number;
   revenueData: Array<{ date: string; amount: number }>;
+  quotationData: Array<{ date: string; count: number }>;
   recentTransactions: Array<{
     id: string;
     clientName: string;
@@ -44,10 +86,21 @@ export function useDashboardStats() {
     totalClients: 0,
     totalItems: 0,
     totalRevenue: 0,
+    totalQuotations: 0,
+    quotationStats: {
+      pending: 0,
+      completed: 0,
+      rejected: 0,
+      total: 0,
+      pendingValue: 0,
+      growth: 0
+    },
     recentClients: [],
     recentItems: [],
+    recentQuotations: [],
     totalInventoryValue: 0,
     revenueData: [],
+    quotationData: [],
     recentTransactions: [],
     topProducts: [],
     salesMetrics: {
@@ -73,11 +126,15 @@ export function useDashboardStats() {
           limit(5)
         );
         const recentClientsSnapshot = await getDocs(recentClientsQuery);
-        const recentClients = recentClientsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: parseFirebaseDate(doc.data().createdAt),
-        }));
+        const recentClients = recentClientsSnapshot.docs.map(doc => {
+          const data = doc.data() as FirestoreClient;
+          return {
+            id: doc.id,
+            name: data.name || '',
+            email: data.email || '',
+            createdAt: parseFirebaseDate(data.createdAt),
+          };
+        });
 
         // Fetch items
         const itemsSnapshot = await getDocs(collection(db, 'items'));
@@ -85,67 +142,120 @@ export function useDashboardStats() {
         let totalInventoryValue = 0;
 
         // Calculate total inventory value and get recent items
-        const allItems = itemsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: parseFirebaseDate(doc.data().createdAt),
-        }));
-
-        totalInventoryValue = allItems.reduce((total, item) => {
-          const price = Number(item.price) || 0;
-          const quantity = Number(item.quantity) || 0;
-          return total + (price * quantity);
-        }, 0);
-
-        // Sort items by createdAt and get the 5 most recent
-        const recentItems = allItems
-          .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-          .slice(0, 5);
-
-        // Fetch completed quotations for revenue calculations
-        const quotationsSnapshot = await getDocs(
-          query(collection(db, 'quotations'), where('status', '==', 'COMPLETED'))
-        );
-        
-        const quotations = quotationsSnapshot.docs.map(doc => {
-          const data = doc.data();
+        const allItems = itemsSnapshot.docs.map(doc => {
+          const data = doc.data() as FirestoreItem;
           return {
             id: doc.id,
-            ...data,
-            completedAt: parseFirebaseDate(data.completedAt || data.createdAt),
-            grandTotal: Number(data.grandTotal) || 0
+            name: data.name || '',
+            price: Number(data.price) || 0,
+            quantity: Number(data.quantity) || 0,
+            createdAt: parseFirebaseDate(data.createdAt),
           };
         });
 
-        // Calculate total revenue and recent transactions
-        let totalRevenue = 0;
-        const recentTransactions: DashboardStats['recentTransactions'] = [];
-        
-        quotations.forEach(quotation => {
-          totalRevenue += quotation.grandTotal;
-          
-          recentTransactions.push({
-            id: quotation.id,
-            clientName: quotation.billTo?.name || 'Unknown Client',
-            amount: quotation.grandTotal,
-            date: quotation.completedAt,
-            status: 'completed'
-          });
+        totalInventoryValue = allItems.reduce((total, item) => {
+          return total + (item.price * item.quantity);
+        }, 0);
+
+        // Sort items by createdAt and get the 5 most recent
+        const recentItems = [...allItems]
+          .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+          .slice(0, 5);
+
+        // Fetch all quotations
+        const quotationsQuery = query(collection(db, 'quotations'), orderBy('createdAt', 'desc'));
+        const allQuotationsSnapshot = await getDocs(quotationsQuery);
+        const allQuotations = allQuotationsSnapshot.docs.map(doc => {
+          const data = doc.data() as FirestoreQuotation;
+          return {
+            id: doc.id,
+            quotationRef: data.quotationRef || '',
+            billTo: data.billTo || { name: 'Unknown Client' },
+            createdAt: parseFirebaseDate(data.createdAt),
+            grandTotal: Number(data.grandTotal) || 0,
+            status: data.status || 'PENDING'
+          };
         });
 
-        // Calculate growth rate (comparing this month to last month)
+        // Calculate quotation statistics
+        const totalQuotations = allQuotations.length;
+        const pendingQuotations = allQuotations.filter(q => q.status === 'PENDING').length;
+        const completedQuotations = allQuotations.filter(q => q.status === 'COMPLETED').length;
+        const rejectedQuotations = allQuotations.filter(q => q.status === 'REJECTED').length;
+        
+        // Calculate pending quotation value
+        const pendingValue = allQuotations
+          .filter(q => q.status === 'PENDING')
+          .reduce((sum, q) => sum + q.grandTotal, 0);
+
+        // Get recent quotations
+        const recentQuotations = allQuotations.slice(0, 5).map(q => ({
+          id: q.id,
+          ref: q.quotationRef,
+          client: q.billTo?.name || 'Unknown Client',
+          amount: q.grandTotal,
+          status: q.status,
+          date: q.createdAt
+        }));
+
+        // Quotation growth calculation
         const now = new Date();
         const thisMonthStart = startOfMonth(now);
         const thisMonthEnd = endOfMonth(now);
         const lastMonthStart = startOfMonth(subMonths(now, 1));
         const lastMonthEnd = endOfMonth(subMonths(now, 1));
 
-        const thisMonthRevenue = quotations
-          .filter(q => q.completedAt >= thisMonthStart && q.completedAt <= thisMonthEnd)
+        const thisMonthQuotations = allQuotations.filter(
+          q => q.createdAt >= thisMonthStart && q.createdAt <= thisMonthEnd
+        ).length;
+
+        const lastMonthQuotations = allQuotations.filter(
+          q => q.createdAt >= lastMonthStart && q.createdAt <= lastMonthEnd
+        ).length;
+
+        const quotationGrowth = lastMonthQuotations === 0 ? 0 : 
+          ((thisMonthQuotations - lastMonthQuotations) / lastMonthQuotations) * 100;
+
+        // Quotation data for chart (last 6 months)
+        const quotationData = [];
+        for (let i = 5; i >= 0; i--) {
+          const monthDate = subMonths(now, i);
+          const monthStart = startOfMonth(monthDate);
+          const monthEnd = endOfMonth(monthDate);
+          
+          const monthQuotationCount = allQuotations
+            .filter(q => q.createdAt >= monthStart && q.createdAt <= monthEnd)
+            .length;
+
+          quotationData.push({
+            date: monthDate.toLocaleString('default', { month: 'short' }),
+            count: monthQuotationCount
+          });
+        }
+
+        // Calculate total revenue and recent transactions
+        let totalRevenue = 0;
+        const recentTransactions: DashboardStats['recentTransactions'] = [];
+        
+        allQuotations.forEach(quotation => {
+          totalRevenue += quotation.grandTotal;
+          
+          recentTransactions.push({
+            id: quotation.id,
+            clientName: quotation.billTo?.name || 'Unknown Client',
+            amount: quotation.grandTotal,
+            date: quotation.createdAt,
+            status: 'completed'
+          });
+        });
+
+        // Calculate growth rate (comparing this month to last month)
+        const thisMonthRevenue = allQuotations
+          .filter(q => q.createdAt >= thisMonthStart && q.createdAt <= thisMonthEnd)
           .reduce((sum, q) => sum + q.grandTotal, 0);
 
-        const lastMonthRevenue = quotations
-          .filter(q => q.completedAt >= lastMonthStart && q.completedAt <= lastMonthEnd)
+        const lastMonthRevenue = allQuotations
+          .filter(q => q.createdAt >= lastMonthStart && q.createdAt <= lastMonthEnd)
           .reduce((sum, q) => sum + q.grandTotal, 0);
 
         const growthRate = lastMonthRevenue === 0 ? 0 : 
@@ -158,8 +268,8 @@ export function useDashboardStats() {
           const monthStart = startOfMonth(monthDate);
           const monthEnd = endOfMonth(monthDate);
           
-          const monthRevenue = quotations
-            .filter(q => q.completedAt >= monthStart && q.completedAt <= monthEnd)
+          const monthRevenue = allQuotations
+            .filter(q => q.createdAt >= monthStart && q.createdAt <= monthEnd)
             .reduce((sum, q) => sum + q.grandTotal, 0);
 
           revenueData.push({
@@ -169,18 +279,29 @@ export function useDashboardStats() {
         }
 
         // Calculate average order value
-        const averageOrderValue = quotations.length === 0 ? 0 :
-          totalRevenue / quotations.length;
+        const averageOrderValue = allQuotations.length === 0 ? 0 :
+          totalRevenue / allQuotations.length;
 
         // Update stats
         setStats({
           totalClients,
           totalItems,
           totalRevenue,
+          totalQuotations,
+          quotationStats: {
+            pending: pendingQuotations,
+            completed: completedQuotations,
+            rejected: rejectedQuotations,
+            total: totalQuotations,
+            pendingValue,
+            growth: quotationGrowth
+          },
           recentClients,
           recentItems,
+          recentQuotations,
           totalInventoryValue,
           revenueData,
+          quotationData,
           recentTransactions: recentTransactions.sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5),
           topProducts: [], // This can be implemented later if needed
           salesMetrics: {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, Package, IndianRupee, Loader, TrendingUp, AlertCircle, Calendar, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Users, Package, IndianRupee, Loader, TrendingUp, AlertCircle, Calendar, ArrowUpRight, ArrowDownRight, FileText } from 'lucide-react';
 import { useDashboardStats } from '../hooks/useDashboardStats';
 import { Link } from 'react-router-dom';
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, Bar } from 'recharts';
@@ -143,17 +143,202 @@ export default function Dashboard() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Inventory Value</CardTitle>
-              <IndianRupee className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Total Quotations</CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(stats.totalInventoryValue)}</div>
-              <p className="text-xs text-muted-foreground">
-                Total value
+              <div className="text-2xl font-bold">{stats.totalQuotations}</div>
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                {stats.quotationStats.growth >= 0 ? (
+                  <>
+                    <ArrowUpRight className="h-3 w-3 text-green-500" />
+                    <span className="text-green-500">
+                      {stats.quotationStats.growth.toFixed(1)}%
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <ArrowDownRight className="h-3 w-3 text-red-500" />
+                    <span className="text-red-500">
+                      {Math.abs(stats.quotationStats.growth).toFixed(1)}%
+                    </span>
+                  </>
+                )}
+                <span>from last month</span>
               </p>
             </CardContent>
           </Card>
         </div>
+
+        {/* Quotation Statistics Section */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4">Quotation Statistics</h2>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3 lg:grid-cols-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Pending Quotations</CardTitle>
+                <div className="h-8 w-8 rounded-full bg-yellow-100 flex items-center justify-center">
+                  <FileText className="h-4 w-4 text-yellow-600" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.quotationStats.pending}</div>
+                <p className="text-xs text-muted-foreground">
+                  Value: {formatCurrency(stats.quotationStats.pendingValue)}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Completed</CardTitle>
+                <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+                  <FileText className="h-4 w-4 text-green-600" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.quotationStats.completed}</div>
+                <p className="text-xs text-muted-foreground">
+                  {((stats.quotationStats.completed / stats.totalQuotations) * 100).toFixed(1)}% of total
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Rejected</CardTitle>
+                <div className="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center">
+                  <FileText className="h-4 w-4 text-red-600" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.quotationStats.rejected}</div>
+                <p className="text-xs text-muted-foreground">
+                  {((stats.quotationStats.rejected / stats.totalQuotations) * 100).toFixed(1)}% of total
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex justify-between items-center pb-2">
+                <CardTitle className="text-sm font-medium">Monthly Growth</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-indigo-600">
+                  {stats.quotationStats.growth >= 0 ? '↑' : '↓'} {Math.abs(stats.quotationStats.growth).toFixed(1)}%
+                </div>
+                <p className="text-xs text-muted-foreground">Month over month</p>
+              </CardContent>
+              <CardFooter className="pt-0">
+                <Link 
+                  to="/quotations" 
+                  className="text-xs text-blue-600 hover:underline"
+                >
+                  View all quotations
+                </Link>
+              </CardFooter>
+            </Card>
+          </div>
+        </div>
+
+        {/* Quotation Chart */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Quotation Trends</CardTitle>
+            <CardDescription>Number of quotations generated per month</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={stats.quotationData}>
+                <defs>
+                  <linearGradient id="colorQuotations" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#6366F1" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#6366F1" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
+                <XAxis dataKey="date" className="text-xs" tickLine={false} axisLine={false} />
+                <YAxis className="text-xs" tickLine={false} axisLine={false} />
+                <Tooltip
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className="rounded-lg border bg-background p-2 shadow-sm">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="flex flex-col">
+                              <span className="text-[0.70rem] uppercase text-muted-foreground">Month</span>
+                              <span className="font-bold text-muted-foreground">{label}</span>
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-[0.70rem] uppercase text-muted-foreground">Quotations</span>
+                              <span className="font-bold text-indigo-600">{payload[0].value}</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="count"
+                  fill="url(#colorQuotations)"
+                  stroke="#6366F1"
+                  strokeWidth={2}
+                />
+                <Bar 
+                  dataKey="count" 
+                  fill="#6366F1"
+                  opacity={0.2}
+                  radius={[4, 4, 0, 0]}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Recent Quotations */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Recent Quotations</CardTitle>
+            <CardDescription>Latest quotations generated</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {stats.recentQuotations && stats.recentQuotations.map((quotation) => (
+                <div key={quotation.id} className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center 
+                      ${quotation.status === 'COMPLETED' ? 'bg-green-100' : 
+                        quotation.status === 'REJECTED' ? 'bg-red-100' : 'bg-yellow-100'}`}>
+                      <FileText className={`h-5 w-5 
+                        ${quotation.status === 'COMPLETED' ? 'text-green-600' : 
+                          quotation.status === 'REJECTED' ? 'text-red-600' : 'text-yellow-600'}`} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{quotation.ref}</p>
+                      <p className="text-xs text-muted-foreground">{quotation.client}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium">{formatCurrency(quotation.amount)}</p>
+                    <p className="text-xs text-muted-foreground">{formatDate(quotation.date)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 text-center">
+              <Link 
+                to="/quotations" 
+                className="text-sm text-blue-600 hover:underline"
+              >
+                View all quotations
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Charts and Tables Section */}
         <div className="grid gap-6">
