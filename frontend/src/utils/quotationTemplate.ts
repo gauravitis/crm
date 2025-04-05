@@ -27,7 +27,7 @@ const calculateTotals = (items: QuotationItem[]) => {
 
 export const generateQuotationHTML = (quotation: Quotation, client: Client, employee?: Employee) => {
   const { subtotal, totalGST, grandTotal } = calculateTotals(quotation.items);
-  const quoteNo = quotation.quotationRef || `CBL-2024-25-ERR`;
+  const quoteNo = quotation.quotationRef || `CBL-2025-26-ERR`;
   const quoteDate = format(new Date(quotation.createdAt), 'dd/MM/yyyy');
 
   return `

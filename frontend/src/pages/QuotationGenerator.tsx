@@ -13,7 +13,7 @@ import { Label } from '../components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { FileText, FileType, Plus, Trash2, Save } from 'lucide-react';
+import { FileText, FileType, Plus, Trash2, Save, Maximize, Minimize, X } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "../components/ui/table";
@@ -102,12 +102,12 @@ const generateReferenceNumber = async () => {
     console.log('Generated reference:', ref, typeof ref);
     if (typeof ref !== 'string') {
       console.error('Reference is not a string:', ref);
-      return `CBL-2024-25-ERR`;
+      return `CBL-2025-26-ERR`;
     }
     return ref;
   } catch (error) {
     console.error('Error generating reference number:', error);
-    return `CBL-2024-25-ERR`;
+    return `CBL-2025-26-ERR`;
   }
 };
 
@@ -280,7 +280,8 @@ function NewItemDialog({ isOpen, onClose, onSave, initialData }: NewItemDialogPr
 export default function QuotationGenerator() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const [isEditMode] = useState(!!id);
+  const isEditMode = !!id;
+  const [focusMode, setFocusMode] = useState(false);
   const { addQuotation } = useQuotations();
   const { clients } = useClients();
   const { items, addItem } = useItems();
@@ -824,7 +825,59 @@ export default function QuotationGenerator() {
   };
 
   return (
-    <div className="p-6 max-w-[98vw] mx-auto">
+    <div className={`space-y-6 transition-all duration-300 ${focusMode ? 'fixed inset-0 z-50 bg-white p-6 overflow-y-auto' : ''}`}>
+      <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm sticky top-0 z-10">
+        <div className="flex items-center">
+          <h1 className="text-2xl font-bold">{isEditMode ? 'Edit Quotation' : 'Quotation Generator'}</h1>
+          {focusMode && (
+            <button
+              onClick={() => setFocusMode(false)}
+              className="ml-4 p-1.5 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100"
+              title="Exit Focus Mode"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          )}
+        </div>
+        
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          <button
+            onClick={() => setFocusMode(!focusMode)}
+            className="flex items-center h-9 px-3 text-gray-600 border rounded-md hover:bg-gray-50"
+            title={focusMode ? "Exit Focus Mode" : "Enter Focus Mode"}
+          >
+            {focusMode ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+            <span className="ml-1.5 text-sm hidden sm:inline">{focusMode ? "Exit Focus" : "Focus Mode"}</span>
+          </button>
+          
+          <Button
+            onClick={handleGenerateQuotation}
+            variant="default"
+            className="flex items-center h-9 px-3 text-sm"
+          >
+            <FileText className="h-4 w-4 mr-1.5" />
+            <span className="hidden sm:inline">Generate</span>
+          </Button>
+          
+          <Button
+            onClick={handleSaveQuotation}
+            variant="default"
+            className="flex items-center h-9 px-3 text-sm"
+          >
+            <Save className="h-4 w-4 mr-1.5" />
+            <span className="hidden sm:inline">Save</span>
+          </Button>
+          
+          <Button
+            onClick={clearData}
+            variant="outline"
+            className="flex items-center h-9 px-3 text-sm"
+          >
+            <span className="hidden sm:inline">Clear</span>
+          </Button>
+        </div>
+      </div>
+      
       <ToastContainer />
       <div className="space-y-6">
         <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm">
@@ -1012,63 +1065,67 @@ export default function QuotationGenerator() {
 
         {/* Items Section */}
         <Card className="shadow-md">
-          <CardHeader className="bg-gray-50/80 flex flex-row items-center justify-between space-y-0 pb-4">
-            <CardTitle className="text-lg font-semibold">Items</CardTitle>
-            <Button
-              onClick={addQuotationItem}
-              variant="outline"
-              className="h-9 px-4 text-sm font-medium"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Item
-            </Button>
+          <CardHeader className="bg-gray-50/80">
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-lg font-semibold">Items</CardTitle>
+              <Button
+                onClick={addQuotationItem}
+                variant="outline"
+                className="flex items-center gap-1"
+              >
+                <Plus className="h-4 w-4" />
+                Add Item
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent className="p-6">
-            <div className="overflow-x-auto -mx-6">
-              <div className="inline-block min-w-full align-middle px-6">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-16">S.No</TableHead>
-                      <TableHead className="w-32">Cat No.</TableHead>
-                      <TableHead className="w-32">Pack Size</TableHead>
-                      <TableHead className="min-w-[200px]">Description</TableHead>
-                      <TableHead className="w-32">HSN Code</TableHead>
-                      <TableHead className="w-24">Qty</TableHead>
-                      <TableHead className="w-32">Unit Rate</TableHead>
-                      <TableHead className="w-28">Discount %</TableHead>
-                      <TableHead className="w-32">Discount Value</TableHead>
-                      <TableHead className="w-24">GST %</TableHead>
-                      <TableHead className="w-32">GST Value</TableHead>
-                      <TableHead className="w-32">Total</TableHead>
-                      <TableHead className="w-32">Lead Time</TableHead>
-                      <TableHead className="w-32">Make</TableHead>
-                      <TableHead className="w-20">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {quotationData.items.map((item, index) => (
-                      <TableRow key={index}>
-                        <TableCell className="text-center font-medium">{item.sno}</TableCell>
-                        <TableCell className="relative">
-                          <Input
-                            type="text"
-                            value={item.cat_no}
-                            onChange={(e) => {
-                              handleItemSearch(index, 'cat_no', e.target.value);
-                              handleItemChange(index, 'cat_no', e.target.value);
-                            }}
-                            placeholder="Enter catalog number"
-                            className="text-base min-w-[120px]"
-                          />
-                          {showItemSuggestions && itemSuggestions.length > 0 && index === focusedItemIndex && (
-                            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                              {itemSuggestions.map((suggestion, idx) => {
-                                const isNewItem = !suggestion.id || suggestion.id === 'new';
+          <CardContent className="p-4">
+            <div className="w-full">
+              <Table containerClassName="max-h-[60vh] border rounded-md">
+                <TableHeader sticky={true}>
+                  <TableRow className="bg-gray-50">
+                    <TableHead className="w-14 text-center">#</TableHead>
+                    <TableHead className="min-w-[140px]">Cat. No</TableHead>
+                    <TableHead className="min-w-[120px]">Pack Size</TableHead>
+                    <TableHead className="min-w-[200px] w-full">Description</TableHead>
+                    <TableHead className="min-w-[100px]">HSN Code</TableHead>
+                    <TableHead className="min-w-[80px] text-right">Qty</TableHead>
+                    <TableHead className="min-w-[100px] text-right">Unit Rate</TableHead>
+                    <TableHead className="min-w-[70px] text-right">Disc %</TableHead>
+                    <TableHead className="min-w-[120px] text-right">Disc Value</TableHead>
+                    <TableHead className="min-w-[80px] text-right">GST %</TableHead>
+                    <TableHead className="min-w-[100px] text-right">GST Value</TableHead>
+                    <TableHead className="min-w-[120px] text-right">Total</TableHead>
+                    <TableHead className="min-w-[100px]">Make</TableHead>
+                    <TableHead className="min-w-[100px]">Lead Time</TableHead>
+                    <TableHead className="w-12"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {quotationData.items.map((item, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="text-center font-medium">{item.sno}</TableCell>
+                      <TableCell className="relative">
+                        <Input
+                          type="text"
+                          value={item.cat_no}
+                          onChange={(e) => {
+                            handleItemChange(index, 'cat_no', e.target.value);
+                            handleItemSearch(index, 'cat_no', e.target.value);
+                          }}
+                          onFocus={() => handleItemFocus(index)}
+                          className="text-base min-w-[120px]"
+                        />
+                        {showItemSuggestions && focusedItemIndex === index && (
+                          <div className="absolute z-20 mt-1 bg-white border border-gray-200 rounded-md shadow-lg w-72 max-h-60 overflow-y-auto">
+                            {itemSuggestions.length === 0 ? (
+                              <div className="p-2 text-sm text-gray-500">No items found. Type to create a new item.</div>
+                            ) : (
+                              itemSuggestions.map((suggestion, i) => {
+                                const isNewItem = suggestion.isNew;
                                 return (
                                   <div
-                                    key={idx}
-                                    className={`px-4 py-2 hover:bg-gray-100 cursor-pointer ${
+                                    key={i}
+                                    className={`p-2 hover:bg-gray-50 cursor-pointer border-b ${
                                       isNewItem ? 'border-l-4 border-blue-500' : ''
                                     }`}
                                     onClick={() => handleSuggestionSelect(suggestion, index)}
@@ -1091,8 +1148,8 @@ export default function QuotationGenerator() {
                                     {!isNewItem && (
                                       <div className="text-sm text-gray-500 mt-1">
                                         {suggestion.packSize && `Pack Size: ${suggestion.packSize}`}
-                                        {suggestion.hsnCode && ` â€¢ HSN: ${suggestion.hsnCode}`}
-                                        {(suggestion.price ?? 0) > 0 && ` â€¢ Price: â‚¹${suggestion.price}`}
+                                        {suggestion.hsnCode && ` • HSN: ${suggestion.hsnCode}`}
+                                        {(suggestion.price ?? 0) > 0 && ` • Price: ₹${suggestion.price}`}
                                       </div>
                                     )}
                                     {isNewItem && (
@@ -1102,134 +1159,117 @@ export default function QuotationGenerator() {
                                     )}
                                   </div>
                                 );
-                              })}
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="text"
-                            value={item.pack_size}
-                            onChange={(e) => handleItemChange(index, 'pack_size', e.target.value)}
-                            className="text-base min-w-[90px]"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="text"
-                            value={item.product_description}
-                            onChange={(e) => handleItemChange(index, 'product_description', e.target.value)}
-                            className="text-base min-w-[200px]"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="text"
-                            value={item.hsn_code}
-                            onChange={(e) => handleItemChange(index, 'hsn_code', e.target.value)}
-                            className="text-base min-w-[100px]"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            value={item.qty}
-                            onChange={(e) => handleItemChange(index, 'qty', e.target.value)}
-                            className="text-base text-right min-w-[80px]"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            value={item.unit_rate}
-                            onChange={(e) => handleItemChange(index, 'unit_rate', e.target.value)}
-                            className="text-base text-right min-w-[100px]"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            value={item.discount_percent}
-                            onChange={(e) => handleItemChange(index, 'discount_percent', e.target.value)}
-                            min="0"
-                            max="100"
-                            className="text-base text-right min-w-[80px]"
-                          />
-                        </TableCell>
-                        <TableCell className="text-right font-medium">â‚¹{item.discounted_value.toFixed(2)}</TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            value={item.gst_percent}
-                            onChange={(e) => handleItemChange(index, 'gst_percent', e.target.value)}
-                            className="text-base text-right min-w-[80px]"
-                          />
-                        </TableCell>
-                        <TableCell className="text-right font-medium">â‚¹{item.gst_value.toFixed(2)}</TableCell>
-                        <TableCell className="text-right font-medium">â‚¹{item.total_price.toFixed(2)}</TableCell>
-                        <TableCell>
-                          <Input
-                            type="text"
-                            value={item.lead_time}
-                            onChange={(e) => handleItemChange(index, 'lead_time', e.target.value)}
-                            className="text-base min-w-[100px]"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="text"
-                            value={item.make}
-                            onChange={(e) => handleItemChange(index, 'make', e.target.value)}
-                            className="text-base min-w-[100px]"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            onClick={() => removeItem(index)}
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 p-0 text-red-600 hover:text-red-900 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                  <TableFooter>
-                    <TableRow>
-                      <TableCell colSpan={11} className="text-right font-medium text-gray-600">Sub Total:</TableCell>
-                      <TableCell colSpan={4} className="text-right font-medium text-gray-600">â‚¹{quotationData.subTotal.toFixed(2)}</TableCell>
+                              })
+                            )}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="text"
+                          value={item.pack_size}
+                          onChange={(e) => handleItemChange(index, 'pack_size', e.target.value)}
+                          className="text-base min-w-[90px]"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="text"
+                          value={item.product_description}
+                          onChange={(e) => handleItemChange(index, 'product_description', e.target.value)}
+                          className="text-base min-w-[200px]"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="text"
+                          value={item.hsn_code}
+                          onChange={(e) => handleItemChange(index, 'hsn_code', e.target.value)}
+                          className="text-base min-w-[100px]"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          value={item.qty}
+                          onChange={(e) => handleItemChange(index, 'qty', e.target.value)}
+                          className="text-base text-right min-w-[80px]"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          value={item.unit_rate}
+                          onChange={(e) => handleItemChange(index, 'unit_rate', e.target.value)}
+                          className="text-base text-right min-w-[100px]"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          value={item.discount_percent}
+                          onChange={(e) => handleItemChange(index, 'discount_percent', e.target.value)}
+                          min="0"
+                          max="100"
+                          className="text-base text-right min-w-[80px]"
+                        />
+                      </TableCell>
+                      <TableCell className="text-right font-medium">₹{item.discounted_value.toFixed(2)}</TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          value={item.gst_percent}
+                          onChange={(e) => handleItemChange(index, 'gst_percent', e.target.value)}
+                          className="text-base text-right min-w-[80px]"
+                        />
+                      </TableCell>
+                      <TableCell className="text-right font-medium">₹{item.gst_value.toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-medium">₹{item.total_price.toFixed(2)}</TableCell>
+                      <TableCell>
+                        <Input
+                          type="text"
+                          value={item.make}
+                          onChange={(e) => handleItemChange(index, 'make', e.target.value)}
+                          className="text-base min-w-[100px]"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="text"
+                          value={item.lead_time}
+                          onChange={(e) => handleItemChange(index, 'lead_time', e.target.value)}
+                          className="text-base min-w-[100px]"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <button
+                          onClick={() => removeItem(index)}
+                          className="p-1 text-gray-400 hover:text-red-500 rounded-md"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </TableCell>
                     </TableRow>
-                    <TableRow>
-                      <TableCell colSpan={11} className="text-right font-medium text-gray-600 border-t border-gray-200">Total GST:</TableCell>
-                      <TableCell colSpan={4} className="text-right font-medium text-gray-600 border-t border-gray-200">â‚¹{quotationData.tax.toFixed(2)}</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell colSpan={11} className="text-right font-semibold text-gray-900 border-t border-gray-200">Grand Total:</TableCell>
-                      <TableCell colSpan={4} className="text-right font-semibold text-gray-900 border-t border-gray-200">â‚¹{quotationData.grandTotal.toFixed(2)}</TableCell>
-                    </TableRow>
-                  </TableFooter>
-                </Table>
-              </div>
-            </div>
-
-            {/* Updated Totals Section with light background */}
-            <div className="flex justify-end mt-6">
-              <div className="w-72 space-y-2">
-                <div className="flex justify-between items-center py-2 text-gray-600">
-                  <span className="font-medium">Sub Total:</span>
-                  <span>â‚¹{quotationData.subTotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between items-center py-2 text-gray-600 border-t border-gray-200">
-                  <span className="font-medium">Total GST:</span>
-                  <span>â‚¹{quotationData.tax.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between items-center py-2 text-gray-900 border-t border-gray-200">
-                  <span className="font-semibold">Grand Total:</span>
-                  <span className="font-semibold">â‚¹{quotationData.grandTotal.toFixed(2)}</span>
-                </div>
-              </div>
+                  ))}
+                </TableBody>
+                <TableFooter>
+                  <TableRow>
+                    <TableCell colSpan={10} className="text-right font-semibold">Sub Total:</TableCell>
+                    <TableCell className="text-right font-semibold">₹{quotationData.subTotal.toFixed(2)}</TableCell>
+                    <TableCell colSpan={3}></TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell colSpan={10} className="text-right font-semibold">Tax:</TableCell>
+                    <TableCell className="text-right font-semibold">₹{quotationData.tax.toFixed(2)}</TableCell>
+                    <TableCell colSpan={3}></TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell colSpan={10} className="text-right font-semibold">Grand Total:</TableCell>
+                    <TableCell className="text-right font-semibold">₹{quotationData.grandTotal.toFixed(2)}</TableCell>
+                    <TableCell colSpan={3}></TableCell>
+                  </TableRow>
+                </TableFooter>
+              </Table>
             </div>
           </CardContent>
         </Card>

@@ -1,26 +1,51 @@
 import * as React from "react"
 
-import { cn } from "@/lib/utils"
+import { cn } from "../../lib/utils"
 
 const Table = React.forwardRef<
   HTMLTableElement,
-  React.HTMLAttributes<HTMLTableElement>
->(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto">
+  React.HTMLAttributes<HTMLTableElement> & {
+    containerClassName?: string;
+  }
+>(({ className, containerClassName, ...props }, ref) => {
+  // If containerClassName is provided, wrap the table in a div with that class
+  if (containerClassName) {
+    return (
+      <div className={cn("w-full overflow-auto", containerClassName)}>
+        <table
+          ref={ref}
+          className={cn("w-full caption-bottom text-sm", className)}
+          {...props}
+        />
+      </div>
+    )
+  }
+  
+  // Otherwise just render the table
+  return (
     <table
       ref={ref}
       className={cn("w-full caption-bottom text-sm", className)}
       {...props}
     />
-  </div>
-))
+  )
+})
 Table.displayName = "Table"
 
 const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
-  React.HTMLAttributes<HTMLTableSectionElement>
->(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props} />
+  React.HTMLAttributes<HTMLTableSectionElement> & {
+    sticky?: boolean;
+  }
+>(({ className, sticky, ...props }, ref) => (
+  <thead 
+    ref={ref} 
+    className={cn(
+      sticky && "sticky top-0 z-10 bg-white shadow-sm", 
+      className
+    )} 
+    {...props} 
+  />
 ))
 TableHeader.displayName = "TableHeader"
 
@@ -42,7 +67,7 @@ const TableFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <tfoot
     ref={ref}
-    className={cn("bg-primary font-medium text-primary-foreground", className)}
+    className={cn("bg-primary-50 font-medium text-primary-900", className)}
     {...props}
   />
 ))
@@ -90,6 +115,18 @@ const TableCell = React.forwardRef<
 ))
 TableCell.displayName = "TableCell"
 
+const TableCaption = React.forwardRef<
+  HTMLTableCaptionElement,
+  React.HTMLAttributes<HTMLTableCaptionElement>
+>(({ className, ...props }, ref) => (
+  <caption
+    ref={ref}
+    className={cn("mt-4 text-sm text-muted-foreground", className)}
+    {...props}
+  />
+))
+TableCaption.displayName = "TableCaption"
+
 export {
   Table,
   TableHeader,
@@ -98,4 +135,5 @@ export {
   TableHead,
   TableRow,
   TableCell,
+  TableCaption,
 }

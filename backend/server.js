@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { Resend } from 'resend';
+import 'dotenv/config';
 
 // Initialize Express app
 const app = express();

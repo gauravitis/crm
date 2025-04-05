@@ -34,9 +34,9 @@ export async function getNextQuotationNumber(): Promise<number> {
 // Generate reference number with sequential counter
 export async function generateQuotationRef(): Promise<string> {
   try {
-    // Use 2024 as the base year
-    const baseYear = 2024;
-    const yearStr = `${baseYear}-25`;
+    // Use 2025 as the base year
+    const baseYear = 2025;
+    const yearStr = `${baseYear}-26`;
     
     const number = await getNextQuotationNumber();
     console.log('Next number:', number, typeof number);
