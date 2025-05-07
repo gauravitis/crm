@@ -7,6 +7,7 @@ import { useQuotations } from '../hooks/useQuotations';
 import { useClients } from '../hooks/useClients';
 import { useItems } from '../hooks/useItems';
 import { useEmployees } from '../hooks/useEmployees';
+import { useCompanies } from '../hooks/useCompanies';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -30,6 +31,7 @@ const defaultQuotationData: Quotation = {
   createdAt: new Date().toISOString(),
   quotationDate: new Date().toISOString().split('T')[0],
   validTill: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
+  companyId: '',
   billTo: {
     name: '',
     company: '',
@@ -101,11 +103,23 @@ const defaultProduct: QuotationProduct = {
 };
 
 // Function to generate reference number
-const generateReferenceNumber = async () => {
+const generateReferenceNumber = async (companyId?: string, companyList: any[] = []) => {
   try {
-    console.log('Generating reference number...');
-    const ref = await generateQuotationRef();
+    console.log('Generating reference number for company ID:', companyId);
+    
+    // If we have a company ID, get the company's short code
+    let shortCode = '';
+    if (companyId && companyList.length > 0) {
+      const company = companyList.find(c => c.id === companyId);
+      if (company) {
+        shortCode = company.shortCode;
+        console.log('Using company short code for reference:', shortCode);
+      }
+    }
+    
+    const ref = await generateQuotationRef(shortCode);
     console.log('Generated reference:', ref, typeof ref);
+    
     if (typeof ref !== 'string') {
       console.error('Reference is not a string:', ref);
       return `CBL-2025-26-ERR`;
@@ -292,6 +306,7 @@ export default function QuotationGenerator() {
   const { clients } = useClients();
   const { items, addItem } = useItems();
   const { employees } = useEmployees();
+  const { companies } = useCompanies();
   
   const [isSaving, setIsSaving] = useState(false);
   const [quotationData, setQuotationData] = useState<Quotation>(() => {
@@ -342,7 +357,7 @@ export default function QuotationGenerator() {
     const initializeRef = async () => {
       try {
         console.log('Initializing reference...');
-        const ref = await generateReferenceNumber();
+        const ref = await generateReferenceNumber(quotationData.companyId, companies);
         console.log('Setting reference in state:', ref, typeof ref);
         if (typeof ref === 'string') {
           setQuotationData(prev => {
@@ -367,7 +382,7 @@ export default function QuotationGenerator() {
       console.log('Current quotationRef:', quotationData.quotationRef, typeof quotationData.quotationRef); // Debug log
       initializeRef();
     }
-  }, []);
+  }, [quotationData.companyId, companies]);
 
   // Set selected employee when loading quotation data
   useEffect(() => {
@@ -490,9 +505,23 @@ export default function QuotationGenerator() {
 
   const handleGenerateQuotation = async () => {
     try {
+      // Validate company selection
+      if (!quotationData.companyId) {
+        toast.error('Please select a company for this quotation');
+        return;
+      }
+
+      // Get the selected company
+      const selectedCompany = companies.find(company => company.id === quotationData.companyId);
+      if (!selectedCompany) {
+        toast.error('Selected company not found');
+        return;
+      }
+
       // Update quotation data with selected employee details
       const documentData = {
         ...quotationData,
+        company: selectedCompany,
         employee: selectedEmployee ? {
           id: selectedEmployee.id,
           name: selectedEmployee.name,
@@ -555,9 +584,25 @@ export default function QuotationGenerator() {
       setIsSaving(true);
       console.log('Starting to save quotation...');
 
+      // Validate company selection
+      if (!quotationData.companyId) {
+        toast.error('Please select a company for this quotation');
+        setIsSaving(false);
+        return;
+      }
+
+      // Get the selected company
+      const selectedCompany = companies.find(company => company.id === quotationData.companyId);
+      if (!selectedCompany) {
+        toast.error('Selected company not found');
+        setIsSaving(false);
+        return;
+      }
+
       // Update quotation data with selected employee details
       const documentData: Quotation = {
         ...quotationData,
+        company: selectedCompany,
         employee: selectedEmployee ? {
           id: selectedEmployee.id,
           name: selectedEmployee.name,
@@ -841,6 +886,34 @@ export default function QuotationGenerator() {
     setFocusedItemIndex(index);
   };
 
+  // Re-generate reference number when company changes
+  const handleCompanyChange = (value: string) => {
+    setQuotationData(prev => ({
+      ...prev,
+      companyId: value
+    }));
+    
+    // Update quotation reference with new company short code
+    generateReferenceNumber(value, companies).then(ref => {
+      setQuotationData(prev => ({
+        ...prev,
+        quotationRef: ref
+      }));
+    });
+    
+    // Get the selected company
+    const selectedCompany = companies.find(c => c.id === value);
+    if (selectedCompany) {
+      // Update bank details from selected company
+      setQuotationData(prev => ({
+        ...prev,
+        bankDetails: {
+          ...selectedCompany.bankDetails
+        }
+      }));
+    }
+  };
+
   return (
     <div className={`space-y-6 transition-all duration-300 ${focusMode ? 'fixed inset-0 z-50 bg-white p-6 overflow-y-auto' : ''}`}>
       <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm sticky top-0 z-10">
@@ -962,6 +1035,24 @@ export default function QuotationGenerator() {
           </CardHeader>
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Company</Label>
+                <Select
+                  value={quotationData.companyId}
+                  onValueChange={handleCompanyChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select company" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {companies.filter(c => c.active).map((company) => (
+                      <SelectItem key={company.id} value={company.id}>
+                        {company.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Reference No.</Label>
                 <Input

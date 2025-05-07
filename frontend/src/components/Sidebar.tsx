@@ -44,6 +44,7 @@ export default function Sidebar({ isCollapsed, onCollapse, isMobile, isPinned, o
     { name: 'Clients', icon: Users, path: '/clients' },
     { name: 'Vendors', icon: Users, path: '/vendors' },
     { name: 'Employees', icon: Users2, path: '/employees' },
+    { name: 'Companies', icon: FileText, path: '/companies' },
     { name: 'Quotations', icon: FileText, path: '/quotations' },
     { name: 'Quotation Generator', icon: FileInput, path: '/quotation-generator' },
     { name: 'Pending Orders', icon: ShoppingCart, path: '/pending-orders' },

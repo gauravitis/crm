@@ -58,10 +58,10 @@ export default function ItemList({
   };
 
   // Function to render sortable column header
-  const SortableHeader = ({ field, label }: { field: keyof Item, label: string }) => (
+  const SortableHeader = ({ field, label, className }: { field: keyof Item, label: string, className?: string }) => (
     <th 
-      className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider 
-        ${onSort ? 'cursor-pointer hover:bg-gray-200' : ''}`}
+      className={`px-3 py-3 text-left text-xs font-medium uppercase tracking-wider 
+        ${onSort ? 'cursor-pointer hover:bg-gray-200' : ''} ${className || ''}`}
       onClick={onSort ? () => handleSortClick(field) : undefined}
     >
       <div className="flex items-center">
@@ -72,25 +72,25 @@ export default function ItemList({
   );
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200">
-      <table className="min-w-full divide-y divide-gray-200">
+    <div className="overflow-x-auto rounded-lg border border-gray-200 w-full">
+      <table className="min-w-full divide-y divide-gray-200 table-fixed">
         <thead className="bg-gray-50">
           <tr>
-            <SortableHeader field="name" label="Name" />
-            <SortableHeader field="catalogueId" label="Catalogue ID" />
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <SortableHeader field="name" label="Name" className="w-[20%]" />
+            <SortableHeader field="catalogueId" label="Catalogue ID" className="w-[10%]" />
+            <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[10%] hidden md:table-cell">
               CAS Number
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[8%] hidden lg:table-cell">
               Pack Size
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[8%] hidden lg:table-cell">
               HSN Code
             </th>
-            <SortableHeader field="brand" label="Brand/Make" />
-            <SortableHeader field="price" label="Price" />
-            <SortableHeader field="quantity" label="Quantity" />
-            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <SortableHeader field="brand" label="Brand/Make" className="w-[12%] hidden md:table-cell" />
+            <SortableHeader field="price" label="Price" className="w-[8%]" />
+            <SortableHeader field="quantity" label="Quantity" className="w-[10%]" />
+            <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-[10%]">
               Actions
             </th>
           </tr>
@@ -98,57 +98,61 @@ export default function ItemList({
         <tbody className="bg-white divide-y divide-gray-200">
           {items.map((item) => (
             <tr key={item.id} className="hover:bg-gray-50">
-              <td className="px-4 py-4 whitespace-nowrap">
-                <div className="text-sm font-medium text-gray-900">{item.name}</div>
+              <td className="px-3 py-4 whitespace-nowrap truncate">
+                <div className="text-sm font-medium text-gray-900 truncate" title={item.name}>{item.name}</div>
               </td>
-              <td className="px-4 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-900">{item.catalogueId || '-'}</div>
+              <td className="px-3 py-4 whitespace-nowrap">
+                <div className="text-sm text-gray-900 truncate" title={item.catalogueId || '-'}>{item.catalogueId || '-'}</div>
               </td>
-              <td className="px-4 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-900">{item.casNumber || '-'}</div>
+              <td className="px-3 py-4 whitespace-nowrap hidden md:table-cell">
+                <div className="text-sm text-gray-900 truncate" title={item.casNumber || '-'}>{item.casNumber || '-'}</div>
               </td>
-              <td className="px-4 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-900">{item.packSize || '-'}</div>
+              <td className="px-3 py-4 whitespace-nowrap hidden lg:table-cell">
+                <div className="text-sm text-gray-900 truncate" title={item.packSize || '-'}>{item.packSize || '-'}</div>
               </td>
-              <td className="px-4 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-900">{item.hsnCode || '-'}</div>
+              <td className="px-3 py-4 whitespace-nowrap hidden lg:table-cell">
+                <div className="text-sm text-gray-900 truncate" title={item.hsnCode || '-'}>{item.hsnCode || '-'}</div>
               </td>
-              <td className="px-4 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-900">{item.brand || '-'}</div>
+              <td className="px-3 py-4 whitespace-nowrap hidden md:table-cell">
+                <div className="text-sm text-gray-900 truncate" title={item.brand || '-'}>{item.brand || '-'}</div>
               </td>
-              <td className="px-4 py-4 whitespace-nowrap">
+              <td className="px-3 py-4 whitespace-nowrap">
                 <div className="text-sm font-medium text-gray-900">{formatPrice(item.price)}</div>
               </td>
-              <td className="px-4 py-4 whitespace-nowrap">
+              <td className="px-3 py-4 whitespace-nowrap">
                 <div className="flex items-center">
                   <span className="text-sm text-gray-900 mr-2">{item.quantity || 0}</span>
                   {item.quantity === 0 ? (
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                      Out of stock
+                      Out
                     </span>
                   ) : item.quantity <= 5 ? (
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
                       <AlertTriangle className="h-3 w-3 mr-1" />
-                      Low stock
+                      Low
                     </span>
                   ) : null}
                 </div>
               </td>
-              <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                <button
-                  onClick={() => onEdit(item)}
-                  className="text-blue-600 hover:text-blue-900 inline-flex items-center"
-                >
-                  <Edit2 className="h-4 w-4" />
-                  <span className="ml-1 sr-only md:not-sr-only">Edit</span>
-                </button>
-                <button
-                  onClick={() => onDelete(item.id!)}
-                  className="text-red-600 hover:text-red-900 inline-flex items-center"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  <span className="ml-1 sr-only md:not-sr-only">Delete</span>
-                </button>
+              <td className="px-3 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <div className="flex justify-end space-x-2">
+                  <button
+                    onClick={() => onEdit(item)}
+                    className="text-blue-600 hover:text-blue-900 p-1"
+                    title="Edit"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                    <span className="sr-only">Edit</span>
+                  </button>
+                  <button
+                    onClick={() => onDelete(item.id!)}
+                    className="text-red-600 hover:text-red-900 p-1"
+                    title="Delete"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    <span className="sr-only">Delete</span>
+                  </button>
+                </div>
               </td>
             </tr>
           ))}

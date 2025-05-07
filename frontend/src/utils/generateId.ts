@@ -32,8 +32,11 @@ export async function getNextQuotationNumber(): Promise<number> {
 }
 
 // Generate reference number with sequential counter
-export async function generateQuotationRef(): Promise<string> {
+export async function generateQuotationRef(companyShortCode?: string): Promise<string> {
   try {
+    // Use company short code or default to CBL 
+    const prefix = companyShortCode || 'CBL';
+    
     // Use 2025 as the base year
     const baseYear = 2025;
     const yearStr = `${baseYear}-26`;
@@ -44,7 +47,7 @@ export async function generateQuotationRef(): Promise<string> {
     const sequentialNumber = number.toString().padStart(3, '0');
     console.log('Padded number:', sequentialNumber);
     
-    const ref = `CBL-${yearStr}-${sequentialNumber}`;
+    const ref = `${prefix}-${yearStr}-${sequentialNumber}`;
     console.log('Final reference:', ref, typeof ref);
     
     return ref;

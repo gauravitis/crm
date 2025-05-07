@@ -14,6 +14,7 @@ import KanbanBoard from './pages/KanbanBoard';
 import { Vendors } from './pages/Vendors';
 import PendingOrders from './pages/PendingOrders';
 import Employees from './pages/Employees';
+import Companies from './pages/Companies';
 import { AuthProvider } from './contexts/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
 import Login from './pages/Login';
@@ -54,6 +55,7 @@ function App() {
                         <Route path="/quotation-generator" element={<QuotationGenerator />} />
                         <Route path="/pending-orders" element={<PendingOrders />} />
                         <Route path="/sales" element={<Sales />} />
+                        <Route path="/companies" element={<Companies />} />
                       </Routes>
                     </Layout>
                   </PrivateRoute>

@@ -1,9 +1,13 @@
+import { Company } from './company';
+
 export interface Quotation {
   id?: string;
   quotationRef: string;
   createdAt: string;
   quotationDate: string;
   validTill: string;
+  companyId: string;
+  company?: Company;
   items: QuotationProduct[];
   billTo: {
     name: string;

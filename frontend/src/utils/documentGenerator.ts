@@ -151,7 +151,7 @@ const createFooterContent = () => {
 };
 
 // Create header content with company details and logo
-const createHeaderContent = () => {
+const createHeaderContent = (company: any) => {
   const headerTextStyle = {
     ...STYLES.fonts.normal,
     color: "FFFFFF",  // White text for better contrast
@@ -164,6 +164,9 @@ const createHeaderContent = () => {
     bold: true,
   };
 
+  // Use company-specific colors if available
+  const headerColor = company?.branding?.primaryColor || COLORS.header;
+
   // Create the table with cells
   const table = new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
@@ -173,7 +176,7 @@ const createHeaderContent = () => {
         children: [
           new TableCell({
             shading: {
-              fill: COLORS.header,  // Use consistent header color
+              fill: headerColor,  // Use company color
               type: ShadingType.CLEAR,
               color: "auto"
             },
@@ -183,7 +186,7 @@ const createHeaderContent = () => {
               new Paragraph({
                 children: [
                   new TextRun({
-                    text: "CHEMBIO LIFESCIENCES",
+                    text: company?.name || "CHEMBIO LIFESCIENCES", // Use company name if available
                     ...headerTitleStyle,
                   }),
                 ],
@@ -194,11 +197,15 @@ const createHeaderContent = () => {
               new Paragraph({
                 children: [
                   new TextRun({
-                    text: "L-10, Himalaya Legend, Nyay Khand-1\n",
+                    text: company?.address ? 
+                      `${company.address.street || ''}, ${company.address.city || ''}\n` : 
+                      "L-10, Himalaya Legend, Nyay Khand-1\n",
                     ...headerTextStyle,
                   }),
                   new TextRun({
-                    text: "Indirapuram, Ghaziabad - 201014",
+                    text: company?.address ? 
+                      `${company.address.state || ''} - ${company.address.postalCode || ''}` : 
+                      "Indirapuram, Ghaziabad - 201014",
                     ...headerTextStyle,
                   }),
                 ],
@@ -209,11 +216,11 @@ const createHeaderContent = () => {
               new Paragraph({
                 children: [
                   new TextRun({
-                    text: "Email:- chembio.sales@gmail.com\n",
+                    text: `Email:- ${company?.contactInfo?.email || "chembio.sales@gmail.com"}\n`,
                     ...headerTextStyle,
                   }),
                   new TextRun({
-                    text: "0120-4909400",
+                    text: company?.contactInfo?.phone || "0120-4909400",
                     ...headerTextStyle,
                   }),
                 ],
@@ -224,7 +231,7 @@ const createHeaderContent = () => {
               new Paragraph({
                 children: [
                   new TextRun({
-                    text: "PAN NO.: AALFC0922C | GST NO.: 09AALFC0922C1ZU",
+                    text: `PAN NO.: ${company?.taxInfo?.pan || "AALFC0922C"} | GST NO.: ${company?.taxInfo?.gst || "09AALFC0922C1ZU"}`,
                     ...headerTextStyle,
                   }),
                 ],
@@ -288,21 +295,73 @@ const base64ToUint8Array = (base64: string): Uint8Array => {
 };
 
 // Add this function at the top with other utility functions
-const getImageData = async (imagePath: string): Promise<Uint8Array> => {
+const getImageData = async (imagePath: string, company?: any): Promise<Uint8Array> => {
   try {
-    const response = await fetch(companyLogo);
-    const blob = await response.blob();
-    return new Uint8Array(await blob.arrayBuffer());
+    console.log('Loading image from:', imagePath);
+    
+    // If it's a base64 string (uploaded image)
+    if (typeof imagePath === 'string' && (
+      imagePath.startsWith('data:image/') || 
+      imagePath.startsWith('blob:') ||
+      imagePath.startsWith('http')
+    )) {
+      const response = await fetch(imagePath);
+      const blob = await response.blob();
+      return new Uint8Array(await blob.arrayBuffer());
+    }
+    
+    // For local file paths
+    let assetPath;
+    
+    // If we have a company with sealImageUrl, prioritize it
+    if (company?.branding?.sealImageUrl) {
+      if (company.branding.sealImageUrl.startsWith('data:image/') ||
+          company.branding.sealImageUrl.startsWith('blob:') ||
+          company.branding.sealImageUrl.startsWith('http')) {
+        const response = await fetch(company.branding.sealImageUrl);
+        const blob = await response.blob();
+        return new Uint8Array(await blob.arrayBuffer());
+      }
+    }
+    
+    // Default fallback to company-seal.jpg
+    try {
+      // Use import.meta.url to get the relative path
+      const defaultSeal = await import('../assets/company-seal.jpg');
+      assetPath = defaultSeal.default;
+      
+      const response = await fetch(assetPath);
+      const blob = await response.blob();
+      return new Uint8Array(await blob.arrayBuffer());
+    } catch (error) {
+      console.error('Error loading default seal:', error);
+      // Return an empty array as a last resort
+      return new Uint8Array(0);
+    }
   } catch (error) {
     console.error('Error loading image:', error);
-    throw error;
+    // Return an empty array if loading fails
+    return new Uint8Array(0);
   }
 };
 
 // Create signature section
-const createSignatureSection = async () => {
-  // Load the image data
-  const sealImageData = await getImageData('/src/assets/company-seal.jpg');
+const createSignatureSection = async (company: any) => {
+  console.log('Creating signature section for company:', company?.name);
+  
+  // Get the company display name
+  const companyDisplayName = company?.legalName || company?.name || "CHEMBIO LIFESCIENCES";
+  
+  // Get seal image directly from company if available
+  let sealImageData;
+  if (company?.branding?.sealImageUrl) {
+    console.log('Using company uploaded seal:', company.branding.sealImageUrl.substring(0, 30) + '...');
+    sealImageData = await getImageData(company.branding.sealImageUrl, company);
+  } else {
+    console.log('Using default company seal');
+    // Default seal
+    sealImageData = await getImageData('', company);
+  }
   
   return new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
@@ -318,7 +377,7 @@ const createSignatureSection = async () => {
                 alignment: AlignmentType.RIGHT,
                 children: [
                   new TextRun({
-                    text: "For CHEMBIO LIFESCIENCES",
+                    text: `For ${companyDisplayName}`,
                     bold: true,
                     ...STYLES.fonts.tableSmall
                   })
@@ -467,7 +526,7 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
     });
 
     // Create signature section first
-    const signatureSection = await createSignatureSection();
+    const signatureSection = await createSignatureSection(data.company);
 
     const doc = new Document({
       styles: {
@@ -515,7 +574,7 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
           })
         },
         children: [
-          createHeaderContent(),
+          createHeaderContent(data.company),
           ...createQuotationTitle(data.quotationRef, data.quotationDate),
 
           new Paragraph({ text: '', spacing: { before: 0, after: 20 } }),

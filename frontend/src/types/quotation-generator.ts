@@ -72,6 +72,7 @@ export interface Quotation {
 }
 
 import { Employee } from './employee';
+import { Company } from './company';
 
 export interface QuotationData {
   billTo: {
@@ -88,6 +89,8 @@ export interface QuotationData {
     gst: string;
     pan: string;
   };
+  companyId: string;
+  company?: Company;
   quotationRef: string;
   quotationDate: string;
   validTill: string;
