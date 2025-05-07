@@ -33,6 +33,7 @@ export interface Quotation {
   notes: string;
   subTotal: number;
   tax: number;
+  roundOff: number;
   grandTotal: number;
   bankDetails: {
     bankName: string;

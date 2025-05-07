@@ -895,6 +895,40 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
                   })
                 ]
               }),
+              // Add Round Off Row
+              new TableRow({
+                children: [
+                  new TableCell({
+                    borders: {
+                      top: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                      bottom: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                      left: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                      right: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                    },
+                    children: [new Paragraph({ 
+                      children: [new TextRun({ 
+                        text: 'Round Off:', 
+                        ...STYLES.fonts.tableSmall 
+                      })]
+                    })]
+                  }),
+                  new TableCell({
+                    borders: {
+                      top: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                      bottom: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                      left: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                      right: { style: BorderStyle.SINGLE, size: 1, color: COLORS.border },
+                    },
+                    children: [new Paragraph({ 
+                      alignment: AlignmentType.RIGHT,
+                      children: [new TextRun({ 
+                        text: formatCurrency(Math.round(data.subTotal + data.tax) - (data.subTotal + data.tax), true), 
+                        ...STYLES.fonts.tableSmall 
+                      })]
+                    })]
+                  })
+                ]
+              }),
               new TableRow({
                 children: [
                   new TableCell({
@@ -922,7 +956,7 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
                     children: [new Paragraph({ 
                       alignment: AlignmentType.RIGHT,
                       children: [new TextRun({ 
-                        text: formatCurrency(data.grandTotal, true), 
+                        text: formatCurrency(Math.round(data.subTotal + data.tax), true), 
                         bold: true,
                         ...STYLES.fonts.tableSmall 
                       })]

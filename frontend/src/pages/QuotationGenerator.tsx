@@ -56,6 +56,7 @@ const defaultQuotationData: Quotation = {
   items: [],
   subTotal: 0,
   tax: 0,
+  roundOff: 0,
   grandTotal: 0,
   paymentTerms: '',
   notes: `Terms & Conditions:
@@ -65,9 +66,9 @@ const defaultQuotationData: Quotation = {
 4. Order once placed will not be cancelled
 5. Prices are subject to change without prior notice
 6. All prices are in Indian Rupees (INR)
-8. Delivery: Ex-works (Indirapuram, Ghaziabad)
-9. Warranty: As per manufacturer's warranty
-11. Jurisdiction: All disputes subject to Ghaziabad jurisdiction only`,
+7. Delivery: Ex-works (Indirapuram, Ghaziabad)
+8. Warranty: As per manufacturer's warranty
+9. Jurisdiction: All disputes subject to Ghaziabad jurisdiction only`,
   bankDetails: {
     bankName: '',
     accountNo: '',
@@ -410,14 +411,21 @@ export default function QuotationGenerator() {
       const amountAfterDiscount = baseAmount - discountAmount;
       return sum + amountAfterDiscount;
     }, 0);
+    
     const totalTax = items.reduce((sum, item) => sum + item.gst_value, 0);
-    const grandTotal = items.reduce((sum, item) => sum + item.total_price, 0);
+    const calculatedTotal = items.reduce((sum, item) => sum + item.total_price, 0);
+    
+    // Calculate the round off amount and the rounded grand total
+    const rawGrandTotal = subTotal + totalTax;
+    const roundedGrandTotal = Math.round(rawGrandTotal);
+    const roundOffAmount = roundedGrandTotal - rawGrandTotal;
 
     setQuotationData(prev => ({
       ...prev,
       subTotal: Number(subTotal.toFixed(2)),
       tax: Number(totalTax.toFixed(2)),
-      grandTotal: Number(grandTotal.toFixed(2)),
+      roundOff: Number(roundOffAmount.toFixed(2)),
+      grandTotal: roundedGrandTotal,
     }));
   };
 
@@ -827,6 +835,10 @@ export default function QuotationGenerator() {
         [name]: value
       }
     }));
+  };
+
+  const handleItemFocus = (index: number) => {
+    setFocusedItemIndex(index);
   };
 
   return (
@@ -1266,6 +1278,11 @@ export default function QuotationGenerator() {
                   <TableRow>
                     <TableCell colSpan={10} className="text-right font-semibold">Tax:</TableCell>
                     <TableCell className="text-right font-semibold">₹{quotationData.tax.toFixed(2)}</TableCell>
+                    <TableCell colSpan={3}></TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell colSpan={10} className="text-right font-semibold">Round Off:</TableCell>
+                    <TableCell className="text-right font-semibold">₹{quotationData.roundOff.toFixed(2)}</TableCell>
                     <TableCell colSpan={3}></TableCell>
                   </TableRow>
                   <TableRow>
