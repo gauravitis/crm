@@ -62,7 +62,12 @@ const defaultQuotationData: Quotation = {
 1. Validity: 30 Days
 2. Lead Time: Please check individual items for their lead time
 3. Please check the item status before placing order
-4. Order once placed will not be cancelled`,
+4. Order once placed will not be cancelled
+5. Prices are subject to change without prior notice
+6. All prices are in Indian Rupees (INR)
+8. Delivery: Ex-works (Indirapuram, Ghaziabad)
+9. Warranty: As per manufacturer's warranty
+11. Jurisdiction: All disputes subject to Ghaziabad jurisdiction only`,
   bankDetails: {
     bankName: '',
     accountNo: '',
@@ -1302,6 +1307,9 @@ export default function QuotationGenerator() {
                     </SelectItem>
                     <SelectItem value="100% payment within 30 days of delivery of items">
                       100% payment within 30 days of delivery of items
+                    </SelectItem>
+                    <SelectItem value="100% advance payment against the PO">
+                      100% advance payment against the PO
                     </SelectItem>
                   </SelectContent>
                 </Select>
