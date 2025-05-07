@@ -209,7 +209,7 @@ const createHeaderContent = () => {
               new Paragraph({
                 children: [
                   new TextRun({
-                    text: "Email:- sales.chembio@gmail.com\n",
+                    text: "Email:- chembio.sales@gmail.com\n",
                     ...headerTextStyle,
                   }),
                   new TextRun({
@@ -989,7 +989,8 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
           new Paragraph({
             children: [
               new TextRun({
-                text: `1) ${data.paymentTerms || ''}`,
+                text: `1) Payment Terms: ${data.paymentTerms || '100% advance payment'}`,
+                bold: true,
                 ...STYLES.fonts.tableSmall
               })
             ],
@@ -1001,6 +1002,10 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
             .map((line, index) => {
               // Remove any existing numbers at the start of the line
               const cleanedLine = line.replace(/^\d+\.\s*/, '');
+              // Skip the first line if it's about payment terms (we already handled it above)
+              if (index === 0 && cleanedLine.toLowerCase().includes('payment terms')) {
+                return null;
+              }
               return new Paragraph({
                 children: [
                   new TextRun({
@@ -1010,7 +1015,7 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
                 ],
                 spacing: { before: 0, after: 50 }
               });
-            }) : []),
+            }).filter(Boolean) : []),
 
           // Contact Person section (Quotation Created By)
           new Paragraph({
