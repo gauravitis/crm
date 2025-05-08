@@ -1046,15 +1046,15 @@ export async function generateWord(data: QuotationData): Promise<{ buffer: Array
           new Paragraph({
             children: [
               new TextRun({
-                text: "HDFC BANK LTD.\n",
+                text: `${data.bankDetails?.bankName || 'HDFC BANK LTD.'}\n`,
                 ...STYLES.fonts.tableSmall
               }),
               new TextRun({
-                text: "Account No: 50200017511430 ; NEFT/RTGS IFCS : HDFC0000590\n",
+                text: `Account No: ${data.bankDetails?.accountNo || '50200017511430'} ; NEFT/RTGS IFCS : ${data.bankDetails?.ifscCode || 'HDFC0000590'}\n`,
                 ...STYLES.fonts.tableSmall
               }),
               new TextRun({
-                text: "Branch code:0590 ; Micro code : 110240081 ;Account type: Current account",
+                text: `Branch code: ${data.bankDetails?.branchCode || '0590'} ; Micro code : ${data.bankDetails?.microCode || '110240081'} ; Account type: ${data.bankDetails?.accountType || 'Current account'}`,
                 ...STYLES.fonts.tableSmall
               })
             ],

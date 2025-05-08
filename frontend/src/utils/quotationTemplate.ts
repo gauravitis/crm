@@ -124,13 +124,13 @@ export const generateQuotationHTML = (quotation: Quotation, client: Client, empl
     </head>
     <body>
       <div class="header">
-        <div class="company-name">Chembio Lifesciences</div>
+        <div class="company-name">${quotation.company?.name || 'Chembio Lifesciences'}</div>
         <div class="company-details">
-          L-10, Himalaya Legend, Nyay Khand-1<br>
-          Indirapuram, Ghaziabad-201014<br>
-          Ph: 9911998473, 0120-4909400<br>
-          info@chembiolifesciences.com<br>
-          GST: 09AAJFC1075D1ZN
+          ${quotation.company?.address?.street || 'L-10, Himalaya Legend, Nyay Khand-1'}<br>
+          ${quotation.company?.address?.city || 'Indirapuram'}, ${quotation.company?.address?.state || 'Ghaziabad'}-${quotation.company?.address?.postalCode || '201014'}<br>
+          Ph: ${quotation.company?.contactInfo?.phone || '9911998473, 0120-4909400'}<br>
+          ${quotation.company?.contactInfo?.email || 'info@chembiolifesciences.com'}<br>
+          GST: ${quotation.company?.taxInfo?.gst || '09AAJFC1075D1ZN'}
         </div>
       </div>
 
@@ -204,13 +204,13 @@ export const generateQuotationHTML = (quotation: Quotation, client: Client, empl
 
       <div class="bank-details">
         <h3>Bank Details:</h3>
-        <div>Bank Name: HDFC BANK</div>
-        <div>Account No: 50200074357647</div>
-        <div>IFSC Code: HDFC0004745</div>
+        <div>Bank Name: ${quotation.bankDetails?.bankName || 'HDFC BANK'}</div>
+        <div>Account No: ${quotation.bankDetails?.accountNo || '50200074357647'}</div>
+        <div>IFSC Code: ${quotation.bankDetails?.ifscCode || 'HDFC0004745'}</div>
       </div>
 
       <div class="signature">
-        <p>For Chembio Lifesciences</p>
+        <p>For ${quotation.company?.name || 'Chembio Lifesciences'}</p>
         <br><br>
         <p>Authorized Signatory</p>
       </div>
