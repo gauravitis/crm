@@ -1,6 +1,6 @@
 # CRM System
 
-A modern Customer Relationship Management (CRM) system built with React and TypeScript for the frontend and Express.js for the backend, featuring a robust tech stack and comprehensive functionality.
+A comprehensive Customer Relationship Management (CRM) system designed for business process automation, with a focus on quotation management and analytics. Built with React and TypeScript for the frontend and Firebase for the backend, this system offers robust features for multi-company operations, client management, and advanced document generation.
 
 ## 🚀 Technologies Used
 
@@ -15,22 +15,23 @@ A modern Customer Relationship Management (CRM) system built with React and Type
 - **Tailwind CSS** - Styling
 - **React Hook Form** - Form Management
 - **Zod** - Schema Validation
+- **Recharts** - Data Visualization Library
 
-### Backend
-- **Express.js** - Node.js Web Framework
-- **Firebase Admin** - Authentication & Database
-- **Resend** - Email Service
+### Backend & Database
+- **Firebase** - Backend-as-a-Service
+  - **Firestore** - NoSQL Database
+  - **Authentication** - User Management
+  - **Cloud Storage** - File Storage
+  - **Cloud Functions** - Serverless Functions (planned)
+- **Express.js** - Node.js Web Framework (for specific API endpoints)
 
 ### Services & Integrations
-- **Firebase** - Authentication & Database
-  - Authentication
-  - Firestore Database
-  - Cloud Storage
 - **Resend** - Transactional Emails
+- **Vercel** - Deployment Platform
 
 ### Document Generation
 - **@react-pdf/renderer** - PDF Generation
-- **docx** - Word Document Generation
+- **docx** - Word Document Generation with dynamic company profiles
 - **jspdf** & **jspdf-autotable** - PDF Generation
 - **html2canvas** - HTML to Canvas Conversion
 
@@ -38,10 +39,11 @@ A modern Customer Relationship Management (CRM) system built with React and Type
 - **ESLint** - Code Linting
 - **Prettier** - Code Formatting
 - **TypeScript** - Type Checking
+- **Git & GitHub** - Version Control
 
 ## 📁 Project Structure
 
-The project is divided into two main parts: frontend and backend.
+The project follows a modular architecture for maintainability and scalability.
 
 ### Frontend Structure
 ```
@@ -49,15 +51,21 @@ frontend/
 ├── src/
 │   ├── assets/          # Static assets and images
 │   ├── components/      # Reusable UI components
-│   ├── config/          # Configuration files
+│   │   ├── ui/          # Base UI components from Shadcn
+│   │   ├── client/      # Client management components
+│   │   ├── company/     # Company management components
+│   │   ├── dashboard/   # Dashboard widgets and charts
+│   │   ├── items/       # Item inventory components
+│   │   └── quotation-generator/ # Quotation creation components
+│   ├── config/          # Configuration files (Firebase, etc.)
 │   ├── context/         # React Context providers
-│   ├── hooks/           # Custom React hooks
+│   ├── hooks/           # Custom React hooks for data and business logic
 │   ├── lib/             # Utility libraries
 │   ├── pages/           # Application pages/routes
 │   ├── services/        # API and external service integrations
 │   ├── store/           # State management (Zustand)
 │   ├── types/           # TypeScript type definitions
-│   └── utils/           # Helper functions and utilities
+│   └── utils/           # Helper functions and document generators
 ```
 
 ### Backend Structure
@@ -73,36 +81,80 @@ backend/
 
 ## 🔑 Key Features
 
-1. **Authentication & Authorization**
-   - User authentication via Firebase
+### 1. Multi-Company Management
+   - Support for multiple companies within a single CRM instance
+   - Company-specific settings, branding, and document templates
+   - Company-specific bank account details for financial documents
+   - Filtering of data by company throughout the application
+
+### 2. Advanced Dashboard & Analytics
+   - Interactive data visualization with Recharts
+   - Company-specific dashboard filtering
+   - Time period comparison (current vs previous period, year-over-year)
+   - Key performance indicators:
+     - Conversion rates from quotations to sales
+     - Revenue tracking and growth analysis
+     - Average quotation value by company
+     - Status distribution analytics (pending, completed, rejected)
+
+### 3. Comprehensive Client Management
+   - Detailed client profiles with contact information
+   - Client history and interaction tracking
+   - Client categorization and segmentation
+   - Quick access to client-specific quotations
+
+### 4. Sophisticated Quotation System
+   - Dynamic quotation generation with real-time calculations
+   - Custom reference number format with company-specific prefixes
+   - Multiple formats: PDF, HTML, and Word Document export options
+   - Company-specific templates with correct bank details and branding
+   - Multi-currency support
+   - Custom terms and conditions
+   - Item inventory integration with price management
+
+### 5. Document Generation & Management
+   - Word document generation with dynamic company profiles
+   - PDF quotation generation with customizable templates
+   - Email integration for sending documents directly to clients
+   - Document versioning and history
+
+### 6. Item & Inventory Management
+   - Product/service catalog management
+   - Pricing tiers and customization
+   - Stock tracking capabilities
+   - Quick item selection in quotations
+
+### 7. User Experience
+   - Responsive design for desktop and mobile devices
+   - Dark mode support
    - Role-based access control
-   - Secure API endpoints
+   - Intuitive navigation and workflows
+   - Fast performance with optimized data fetching
 
-2. **Customer Management**
-   - Customer profiles
-   - Contact information
-   - Interaction history
+## 💻 Technical Highlights
 
-3. **Quotation System**
-   - Dynamic quotation generation
-   - Custom reference number format (CBL-2024-25-XXX)
-   - Item inventory management
-   - Payment terms customization
+### Firebase Integration
+- Firestore for real-time data synchronization
+- Cloud Storage for document management
+- Authentication with multiple provider options
+- Security rules for data protection
 
-4. **Document Management**
-   - PDF quotation generation
-   - Word document generation
-   - Customizable templates
-   - Email integration
+### Reactive UI
+- React 18 with concurrent features
+- Server components for improved performance
+- Efficient state management with Zustand
 
-5. **Data Visualization**
-   - Charts and graphs using Recharts
-   - Business analytics
-   - Sales tracking
+### Document Generation
+- Custom-built document generators
+- Dynamic template system
+- Company-specific branding and details
+- Multi-format support (PDF, DOCX, HTML)
 
-6. **Responsive Design**
-   - Mobile-friendly interface
-   - Modern UI/UX
+### Data Visualization
+- Interactive charts with Recharts
+- Responsive design for all screen sizes
+- Real-time data updates
+- Comparative analysis tools
 
 ## 🚀 Getting Started
 
@@ -132,41 +184,41 @@ backend/
    npm run dev
    ```
 
-## 📦 Build
+## 📦 Build and Deployment
 
-To build the frontend for production:
+### Frontend Deployment
 ```bash
 cd frontend
 npm run build
 ```
 
-To build the backend for production:
+### Backend Deployment
 ```bash
 cd backend
 npm run build
 ```
 
-## 🔧 Development
+## 🔧 Development Workflow
 
-Frontend commands:
+### Frontend Development
 - `npm run dev` - Start development server
 - `npm run build` - Build for production
 - `npm run lint` - Run ESLint
 - `npm run preview` - Preview production build
 
-Backend commands:
+### Backend Development
 - `npm run dev` - Start development server with hot reload
 - `npm start` - Start production server
 - `npm run lint` - Run ESLint
 
-## 🤝 Contributing
+## 🔍 Future Enhancements
 
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+1. **Advanced Reporting** - Customizable report generation with export options
+2. **Mobile Application** - Native mobile experience using React Native
+3. **AI-Powered Insights** - Integration with AI services for business intelligence
+4. **Expanded Integrations** - Connecting with third-party services like accounting software
+5. **Workflow Automation** - Custom workflow rules and triggers
 
 ## 📝 License
 
-This project is private and confidential.
+This project is private and confidential, developed for internal business use.
