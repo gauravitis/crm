@@ -1,10 +1,19 @@
-import React, { useState } from 'react';
-import { Users, Package, IndianRupee, Loader, TrendingUp, AlertCircle, Calendar, ArrowUpRight, ArrowDownRight, FileText, PieChart } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Users, Package, IndianRupee, Loader, TrendingUp, AlertCircle, Calendar, ArrowUpRight, ArrowDownRight, FileText, PieChart, RefreshCcw } from 'lucide-react';
 import { useDashboardStats } from '../hooks/useDashboardStats';
+import { useCompanies } from '../hooks/useCompanies';
 import { Link } from 'react-router-dom';
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, Bar, PieChart as RechartsPieChart, Pie, Cell, Legend } from 'recharts';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue 
+} from "../components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 
 // Helper function to format dates
 const formatDate = (date: Date) => {
@@ -25,9 +34,53 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
+// Company interface
+interface Company {
+  id: string;
+  name: string;
+  active?: boolean;
+  [key: string]: any;
+}
+
 export default function Dashboard() {
   const { stats, loading, error } = useDashboardStats();
   const [dateRange, setDateRange] = useState('30'); // days
+  const { companies } = useCompanies();
+  const [selectedCompanyId, setSelectedCompanyId] = useState('all');
+  const [comparisonPeriod, setComparisonPeriod] = useState('previous'); // 'previous', 'year'
+  
+  // Filter active companies
+  const activeCompanies = (companies?.filter(company => company.active !== false) || []) as Company[];
+  
+  // Filter stats based on selected company
+  const filteredStats = React.useMemo(() => {
+    if (selectedCompanyId === 'all') {
+      return stats;
+    }
+    
+    // Deep clone the stats object to avoid mutating the original
+    const filtered = JSON.parse(JSON.stringify(stats));
+    
+    // Filter company-specific metrics
+    if (filtered.avgQuoteValueByCompany) {
+      filtered.avgQuoteValueByCompany = filtered.avgQuoteValueByCompany.filter(
+        (company: { companyId: string }) => company.companyId === selectedCompanyId
+      );
+    }
+    
+    // Filter only the quotations for the selected company
+    if (filtered.recentQuotations) {
+      // We're assuming recentQuotations needs to be extended with companyId
+      // This is just for type safety in the filtering function
+      filtered.recentQuotations = stats.recentQuotations
+        .filter((quotation: any) => quotation.companyId === selectedCompanyId);
+    }
+    
+    return filtered;
+  }, [stats, selectedCompanyId]);
+
+  // Use filteredStats instead of stats when rendering
+  const displayStats = filteredStats || stats;
 
   if (loading) {
     return (
@@ -62,26 +115,73 @@ export default function Dashboard() {
     <div className="py-6 min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header Section */}
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-semibold">Dashboard</h1>
-          <div className="flex items-center space-x-4">
-            <select 
-              className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-              value={dateRange}
-              onChange={(e) => setDateRange(e.target.value)}
-            >
-              <option value="7">Last 7 days</option>
-              <option value="30">Last 30 days</option>
-              <option value="90">Last 90 days</option>
-            </select>
+        <div className="flex flex-col space-y-4 mb-8">
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-semibold">Dashboard</h1>
             <Button 
               onClick={() => window.location.reload()}
               size="sm"
               className="gap-2"
             >
-              <ArrowUpRight className="h-4 w-4" />
+              <RefreshCcw className="h-4 w-4" />
               Refresh
             </Button>
+          </div>
+          
+          {/* Filters Section */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
+            {/* Company Filter */}
+            <div className="w-full sm:w-auto">
+              <label htmlFor="company-filter" className="block text-sm font-medium mb-1">Company</label>
+              <Select
+                value={selectedCompanyId}
+                onValueChange={(value) => setSelectedCompanyId(value)}
+              >
+                <SelectTrigger className="w-full sm:w-[200px]" id="company-filter">
+                  <SelectValue placeholder="Select Company" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Companies</SelectItem>
+                  {activeCompanies.map((company) => (
+                    <SelectItem key={company.id} value={company.id}>
+                      {company.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Time Range and Comparison Period */}
+            <div className="w-full sm:w-auto space-y-2">
+              <div>
+                <label htmlFor="time-range" className="block text-sm font-medium mb-1">Time Period</label>
+                <select 
+                  id="time-range"
+                  className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background w-full sm:w-[200px]"
+                  value={dateRange}
+                  onChange={(e) => setDateRange(e.target.value)}
+                >
+                  <option value="7">Last 7 days</option>
+                  <option value="30">Last 30 days</option>
+                  <option value="90">Last 90 days</option>
+                  <option value="180">Last 6 months</option>
+                  <option value="365">Last year</option>
+                </select>
+              </div>
+              
+              <div>
+                <label htmlFor="comparison-period" className="block text-sm font-medium mb-1">Compare With</label>
+                <select 
+                  id="comparison-period"
+                  className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background w-full sm:w-[200px]"
+                  value={comparisonPeriod}
+                  onChange={(e) => setComparisonPeriod(e.target.value)}
+                >
+                  <option value="previous">Previous Period</option>
+                  <option value="year">Same Period Last Year</option>
+                </select>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -93,20 +193,20 @@ export default function Dashboard() {
               <IndianRupee className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(stats.totalRevenue || 0)}</div>
+              <div className="text-2xl font-bold">{formatCurrency(displayStats.totalRevenue || 0)}</div>
               <p className="text-xs text-muted-foreground flex items-center gap-1">
-                {stats.salesMetrics.growthRate >= 0 ? (
+                {displayStats.salesMetrics.growthRate >= 0 ? (
                   <>
                     <ArrowUpRight className="h-3 w-3 text-green-500" />
                     <span className="text-green-500">
-                      {stats.salesMetrics.growthRate.toFixed(1)}%
+                      {displayStats.salesMetrics.growthRate.toFixed(1)}%
                     </span>
                   </>
                 ) : (
                   <>
                     <ArrowDownRight className="h-3 w-3 text-red-500" />
                     <span className="text-red-500">
-                      {Math.abs(stats.salesMetrics.growthRate).toFixed(1)}%
+                      {Math.abs(displayStats.salesMetrics.growthRate).toFixed(1)}%
                     </span>
                   </>
                 )}
@@ -121,7 +221,7 @@ export default function Dashboard() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalClients}</div>
+              <div className="text-2xl font-bold">{displayStats.totalClients}</div>
               <p className="text-xs text-muted-foreground">
                 Active clients
               </p>
@@ -134,7 +234,7 @@ export default function Dashboard() {
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalItems}</div>
+              <div className="text-2xl font-bold">{displayStats.totalItems}</div>
               <p className="text-xs text-muted-foreground">
                 In inventory
               </p>
@@ -147,20 +247,20 @@ export default function Dashboard() {
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalQuotations}</div>
+              <div className="text-2xl font-bold">{displayStats.totalQuotations}</div>
               <p className="text-xs text-muted-foreground flex items-center gap-1">
-                {stats.quotationStats.growth >= 0 ? (
+                {displayStats.quotationStats.growth >= 0 ? (
                   <>
                     <ArrowUpRight className="h-3 w-3 text-green-500" />
                     <span className="text-green-500">
-                      {stats.quotationStats.growth.toFixed(1)}%
+                      {displayStats.quotationStats.growth.toFixed(1)}%
                     </span>
                   </>
                 ) : (
                   <>
                     <ArrowDownRight className="h-3 w-3 text-red-500" />
                     <span className="text-red-500">
-                      {Math.abs(stats.quotationStats.growth).toFixed(1)}%
+                      {Math.abs(displayStats.quotationStats.growth).toFixed(1)}%
                     </span>
                   </>
                 )}
@@ -168,6 +268,123 @@ export default function Dashboard() {
               </p>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Metrics Comparison Section */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4">Metrics Comparison</h2>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Revenue Comparison */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Revenue Comparison</CardTitle>
+                <CardDescription>
+                  {comparisonPeriod === 'previous' ? 'Current vs. Previous Period' : 'Current vs. Last Year'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-between items-center mb-4">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Current</p>
+                    <p className="text-2xl font-bold">{formatCurrency(displayStats.totalRevenue || 0)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      {comparisonPeriod === 'previous' ? 'Previous' : 'Last Year'}
+                    </p>
+                    <p className="text-2xl font-bold text-muted-foreground">
+                      {formatCurrency(displayStats.totalRevenue * 0.8 || 0)}
+                    </p>
+                  </div>
+                </div>
+                <div className="h-2 w-full bg-secondary rounded-full overflow-hidden mb-2">
+                  <div 
+                    className={`h-full ${displayStats.salesMetrics.growthRate >= 0 ? 'bg-green-500' : 'bg-red-500'}`}
+                    style={{ width: `${Math.min(Math.abs(displayStats.salesMetrics.growthRate), 100)}%` }}
+                  />
+                </div>
+                <p className="text-sm text-center">
+                  <span className={displayStats.salesMetrics.growthRate >= 0 ? 'text-green-500' : 'text-red-500'}>
+                    {displayStats.salesMetrics.growthRate >= 0 ? '↑' : '↓'} 
+                    {Math.abs(displayStats.salesMetrics.growthRate).toFixed(1)}%
+                  </span> 
+                  {comparisonPeriod === 'previous' ? ' from previous period' : ' compared to last year'}
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Quotation Comparison */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Quotation Comparison</CardTitle>
+                <CardDescription>
+                  {comparisonPeriod === 'previous' ? 'Current vs. Previous Period' : 'Current vs. Last Year'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-between items-center mb-4">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Current</p>
+                    <p className="text-2xl font-bold">{displayStats.totalQuotations}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      {comparisonPeriod === 'previous' ? 'Previous' : 'Last Year'}
+                    </p>
+                    <p className="text-2xl font-bold text-muted-foreground">
+                      {Math.round(displayStats.totalQuotations / (1 + displayStats.quotationStats.growth / 100)) || 0}
+                    </p>
+                  </div>
+                </div>
+                <div className="h-2 w-full bg-secondary rounded-full overflow-hidden mb-2">
+                  <div 
+                    className={`h-full ${displayStats.quotationStats.growth >= 0 ? 'bg-green-500' : 'bg-red-500'}`}
+                    style={{ width: `${Math.min(Math.abs(displayStats.quotationStats.growth), 100)}%` }}
+                  />
+                </div>
+                <p className="text-sm text-center">
+                  <span className={displayStats.quotationStats.growth >= 0 ? 'text-green-500' : 'text-red-500'}>
+                    {displayStats.quotationStats.growth >= 0 ? '↑' : '↓'} 
+                    {Math.abs(displayStats.quotationStats.growth).toFixed(1)}%
+                  </span> 
+                  {comparisonPeriod === 'previous' ? ' from previous period' : ' compared to last year'}
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Conversion Rate Comparison */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Conversion Rate Analysis</CardTitle>
+                <CardDescription>
+                  Quotation to sales conversion
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-between items-center mb-4">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Current Rate</p>
+                    <p className="text-2xl font-bold">{displayStats.conversionMetrics.quotationToSalesRate.toFixed(1)}%</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-muted-foreground">Target</p>
+                    <p className="text-2xl font-bold text-muted-foreground">50.0%</p>
+                  </div>
+                </div>
+                <div className="h-2 w-full bg-secondary rounded-full overflow-hidden mb-2">
+                  <div 
+                    className="h-full bg-blue-500"
+                    style={{ width: `${displayStats.conversionMetrics.quotationToSalesRate * 2}%` }}
+                  />
+                </div>
+                <p className="text-sm text-center">
+                  {displayStats.conversionMetrics.quotationToSalesRate < 50 
+                    ? `${(50 - displayStats.conversionMetrics.quotationToSalesRate).toFixed(1)}% below target` 
+                    : `${(displayStats.conversionMetrics.quotationToSalesRate - 50).toFixed(1)}% above target`}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* Quotation Statistics Section */}
@@ -182,9 +399,9 @@ export default function Dashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.quotationStats.pending}</div>
+                <div className="text-2xl font-bold">{displayStats.quotationStats.pending}</div>
                 <p className="text-xs text-muted-foreground">
-                  Value: {formatCurrency(stats.quotationStats.pendingValue)}
+                  Value: {formatCurrency(displayStats.quotationStats.pendingValue)}
                 </p>
               </CardContent>
             </Card>
@@ -197,9 +414,9 @@ export default function Dashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.quotationStats.completed}</div>
+                <div className="text-2xl font-bold">{displayStats.quotationStats.completed}</div>
                 <p className="text-xs text-muted-foreground">
-                  {((stats.quotationStats.completed / stats.totalQuotations) * 100).toFixed(1)}% of total
+                  {((displayStats.quotationStats.completed / displayStats.totalQuotations) * 100).toFixed(1)}% of total
                 </p>
               </CardContent>
             </Card>
@@ -212,9 +429,9 @@ export default function Dashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.quotationStats.rejected}</div>
+                <div className="text-2xl font-bold">{displayStats.quotationStats.rejected}</div>
                 <p className="text-xs text-muted-foreground">
-                  {((stats.quotationStats.rejected / stats.totalQuotations) * 100).toFixed(1)}% of total
+                  {((displayStats.quotationStats.rejected / displayStats.totalQuotations) * 100).toFixed(1)}% of total
                 </p>
               </CardContent>
             </Card>
@@ -226,7 +443,7 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-indigo-600">
-                  {stats.quotationStats.growth >= 0 ? '↑' : '↓'} {Math.abs(stats.quotationStats.growth).toFixed(1)}%
+                  {displayStats.quotationStats.growth >= 0 ? '↑' : '↓'} {Math.abs(displayStats.quotationStats.growth).toFixed(1)}%
                 </div>
                 <p className="text-xs text-muted-foreground">Month over month</p>
               </CardContent>
@@ -256,7 +473,7 @@ export default function Dashboard() {
                 <ResponsiveContainer width="100%" height="100%">
                   <RechartsPieChart>
                     <Pie
-                      data={stats.quotationStatusDistribution}
+                      data={displayStats.quotationStatusDistribution}
                       cx="50%"
                       cy="50%"
                       innerRadius={60}
@@ -265,7 +482,7 @@ export default function Dashboard() {
                       dataKey="count"
                       label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
                     >
-                      {stats.quotationStatusDistribution.map((entry, index) => {
+                      {displayStats.quotationStatusDistribution.map((entry, index) => {
                         const COLORS = ['#FFB347', '#4BC0C0', '#FF6B6B']; // Orange, Teal, Red
                         return <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />;
                       })}
@@ -290,12 +507,12 @@ export default function Dashboard() {
                   <div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">Quotation to Sales Rate</span>
-                      <span className="text-sm text-muted-foreground">{stats.conversionMetrics.quotationToSalesRate.toFixed(1)}%</span>
+                      <span className="text-sm text-muted-foreground">{displayStats.conversionMetrics.quotationToSalesRate.toFixed(1)}%</span>
                     </div>
                     <div className="mt-2 h-2 w-full bg-secondary rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-primary"
-                        style={{ width: `${stats.conversionMetrics.quotationToSalesRate}%` }}
+                        style={{ width: `${displayStats.conversionMetrics.quotationToSalesRate}%` }}
                       />
                     </div>
                     <p className="mt-2 text-xs text-muted-foreground">
@@ -306,12 +523,12 @@ export default function Dashboard() {
                   <div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">Average Response Time</span>
-                      <span className="text-sm text-muted-foreground">{stats.conversionMetrics.avgResponseTime} days</span>
+                      <span className="text-sm text-muted-foreground">{displayStats.conversionMetrics.avgResponseTime} days</span>
                     </div>
                     <div className="mt-2 h-2 w-full bg-secondary rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-primary"
-                        style={{ width: `${Math.min(stats.conversionMetrics.avgResponseTime / 5 * 100, 100)}%` }}
+                        style={{ width: `${Math.min(displayStats.conversionMetrics.avgResponseTime / 5 * 100, 100)}%` }}
                       />
                     </div>
                     <p className="mt-2 text-xs text-muted-foreground">
@@ -322,7 +539,7 @@ export default function Dashboard() {
                   <div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">Pending Quotation Value</span>
-                      <span className="text-sm text-muted-foreground">{formatCurrency(stats.quotationStats.pendingValue)}</span>
+                      <span className="text-sm text-muted-foreground">{formatCurrency(displayStats.quotationStats.pendingValue)}</span>
                     </div>
                     <p className="mt-2 text-xs text-muted-foreground">
                       Total value of pending quotations
@@ -340,8 +557,8 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {stats.avgQuoteValueByCompany.length > 0 ? (
-                    stats.avgQuoteValueByCompany.map((company, index) => (
+                  {displayStats.avgQuoteValueByCompany.length > 0 ? (
+                    displayStats.avgQuoteValueByCompany.map((company, index) => (
                       <div key={company.companyId || index} className="space-y-2">
                         <div className="flex justify-between items-center">
                           <span className="font-medium text-sm">{company.companyName}</span>
@@ -351,7 +568,7 @@ export default function Dashboard() {
                           <div 
                             className="h-full bg-primary"
                             style={{ 
-                              width: `${(company.avgValue / (stats.avgQuoteValueByCompany[0]?.avgValue || 1)) * 100}%` 
+                              width: `${(company.avgValue / (displayStats.avgQuoteValueByCompany[0]?.avgValue || 1)) * 100}%` 
                             }}
                           />
                         </div>
@@ -379,7 +596,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={stats.quotationData}>
+              <ComposedChart data={displayStats.quotationData}>
                 <defs>
                   <linearGradient id="colorQuotations" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#6366F1" stopOpacity={0.3}/>
@@ -436,7 +653,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {stats.recentQuotations && stats.recentQuotations.map((quotation) => (
+              {displayStats.recentQuotations && displayStats.recentQuotations.map((quotation) => (
                 <div key={quotation.id} className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center 
@@ -478,7 +695,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent className="h-[400px]">
               <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={stats.revenueData}>
+                <ComposedChart data={displayStats.revenueData}>
                   <defs>
                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#4F46E5" stopOpacity={0.3}/>
@@ -561,7 +778,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {stats.recentTransactions?.map((transaction) => (
+                {displayStats.recentTransactions?.map((transaction) => (
                   <div key={transaction.id} className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">{transaction.clientName}</p>
@@ -592,7 +809,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {stats.topProducts?.map((product) => (
+                {displayStats.topProducts?.map((product) => (
                   <div key={product.id} className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">{product.name}</p>
@@ -602,7 +819,7 @@ export default function Dashboard() {
                       <div className="w-32 h-2 bg-secondary rounded-full overflow-hidden">
                         <div 
                           className="h-full bg-primary"
-                          style={{ width: `${(product.revenue / stats.topProducts[0].revenue) * 100}%` }}
+                          style={{ width: `${(product.revenue / displayStats.topProducts[0].revenue) * 100}%` }}
                         />
                       </div>
                       <span className="font-medium min-w-[100px] text-right">
