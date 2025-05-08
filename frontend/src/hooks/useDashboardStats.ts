@@ -28,6 +28,11 @@ interface FirestoreQuotation {
     name: string;
     [key: string]: any;
   };
+  companyId?: string;
+  company?: {
+    name: string;
+    [key: string]: any;
+  };
   grandTotal: number;
   status: string;
   createdAt: any;
@@ -71,6 +76,22 @@ interface DashboardStats {
     averageOrderValue: number;
     outstandingPayments: number;
   };
+  conversionMetrics: {
+    quotationToSalesRate: number;
+    avgResponseTime: number;
+  };
+  avgQuoteValueByCompany: Array<{
+    companyId: string;
+    companyName: string;
+    avgValue: number;
+    count: number;
+  }>;
+  quotationStatusDistribution: Array<{
+    status: string;
+    name: string;
+    count: number;
+    value: number;
+  }>;
 }
 
 const parseFirebaseDate = (date: any): Date => {
@@ -108,6 +129,12 @@ export function useDashboardStats() {
       averageOrderValue: 0,
       outstandingPayments: 0,
     },
+    conversionMetrics: {
+      quotationToSalesRate: 0,
+      avgResponseTime: 0,
+    },
+    avgQuoteValueByCompany: [],
+    quotationStatusDistribution: [],
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -171,6 +198,8 @@ export function useDashboardStats() {
             id: doc.id,
             quotationRef: data.quotationRef || '',
             billTo: data.billTo || { name: 'Unknown Client' },
+            companyId: data.companyId,
+            company: data.company,
             createdAt: parseFirebaseDate(data.createdAt),
             grandTotal: Number(data.grandTotal) || 0,
             status: data.status || 'PENDING'
@@ -282,6 +311,66 @@ export function useDashboardStats() {
         const averageOrderValue = allQuotations.length === 0 ? 0 :
           totalRevenue / allQuotations.length;
 
+        // Calculate conversion metrics (quotations to sales)
+        const completedQuotationCount = allQuotations.filter(q => q.status === 'COMPLETED').length;
+        const quotationToSalesRate = totalQuotations === 0 ? 0 : 
+          (completedQuotationCount / totalQuotations) * 100;
+        
+        // Assuming an average response time of 2 days for demonstration
+        // In a real scenario, this would be calculated from actual data
+        const avgResponseTime = 2; // days
+        
+        // Calculate average quote value by company
+        const companiesMap = new Map();
+        
+        allQuotations.forEach(quotation => {
+          if (!quotation.companyId) return;
+          
+          const companyData = companiesMap.get(quotation.companyId) || { 
+            totalValue: 0, 
+            count: 0, 
+            name: quotation.company?.name || 'Unknown Company'
+          };
+          
+          companyData.totalValue += quotation.grandTotal;
+          companyData.count += 1;
+          
+          companiesMap.set(quotation.companyId, companyData);
+        });
+        
+        const avgQuoteValueByCompany = Array.from(companiesMap.entries()).map(([companyId, data]) => ({
+          companyId,
+          companyName: data.name,
+          avgValue: data.totalValue / data.count,
+          count: data.count
+        })).sort((a, b) => b.avgValue - a.avgValue);
+        
+        // Calculate quotation status distribution
+        const quotationStatusDistribution = [
+          {
+            status: 'PENDING',
+            name: 'PENDING',
+            count: pendingQuotations,
+            value: pendingValue
+          },
+          {
+            status: 'COMPLETED',
+            name: 'COMPLETED',
+            count: completedQuotations,
+            value: allQuotations
+              .filter(q => q.status === 'COMPLETED')
+              .reduce((sum, q) => sum + q.grandTotal, 0)
+          },
+          {
+            status: 'REJECTED',
+            name: 'REJECTED',
+            count: rejectedQuotations,
+            value: allQuotations
+              .filter(q => q.status === 'REJECTED')
+              .reduce((sum, q) => sum + q.grandTotal, 0)
+          }
+        ];
+
         // Update stats
         setStats({
           totalClients,
@@ -309,6 +398,12 @@ export function useDashboardStats() {
             averageOrderValue,
             outstandingPayments: 0, // This can be calculated if needed
           },
+          conversionMetrics: {
+            quotationToSalesRate,
+            avgResponseTime,
+          },
+          avgQuoteValueByCompany,
+          quotationStatusDistribution,
         });
       } catch (err) {
         console.error('Error fetching dashboard stats:', err);

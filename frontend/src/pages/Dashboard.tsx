@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Users, Package, IndianRupee, Loader, TrendingUp, AlertCircle, Calendar, ArrowUpRight, ArrowDownRight, FileText } from 'lucide-react';
+import { Users, Package, IndianRupee, Loader, TrendingUp, AlertCircle, Calendar, ArrowUpRight, ArrowDownRight, FileText, PieChart } from 'lucide-react';
 import { useDashboardStats } from '../hooks/useDashboardStats';
 import { Link } from 'react-router-dom';
-import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, Bar } from 'recharts';
+import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, Bar, PieChart as RechartsPieChart, Pie, Cell, Legend } from 'recharts';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 
@@ -238,6 +238,135 @@ export default function Dashboard() {
                   View all quotations
                 </Link>
               </CardFooter>
+            </Card>
+          </div>
+        </div>
+
+        {/* Enhanced Metrics Section */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4">Enhanced Analytics</h2>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            {/* Quotation Status Distribution */}
+            <Card className="col-span-1">
+              <CardHeader>
+                <CardTitle className="text-base">Quotation Status Distribution</CardTitle>
+                <CardDescription>Overview of quotation statuses</CardDescription>
+              </CardHeader>
+              <CardContent className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RechartsPieChart>
+                    <Pie
+                      data={stats.quotationStatusDistribution}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={2}
+                      dataKey="count"
+                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                    >
+                      {stats.quotationStatusDistribution.map((entry, index) => {
+                        const COLORS = ['#FFB347', '#4BC0C0', '#FF6B6B']; // Orange, Teal, Red
+                        return <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />;
+                      })}
+                    </Pie>
+                    <Legend />
+                    <Tooltip
+                      formatter={(value, name, props) => [`${value} quotations`, props.payload.status]}
+                    />
+                  </RechartsPieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Conversion Metrics */}
+            <Card className="col-span-1">
+              <CardHeader>
+                <CardTitle className="text-base">Conversion Metrics</CardTitle>
+                <CardDescription>Performance indicators for sales process</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-8">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Quotation to Sales Rate</span>
+                      <span className="text-sm text-muted-foreground">{stats.conversionMetrics.quotationToSalesRate.toFixed(1)}%</span>
+                    </div>
+                    <div className="mt-2 h-2 w-full bg-secondary rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-primary"
+                        style={{ width: `${stats.conversionMetrics.quotationToSalesRate}%` }}
+                      />
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Percentage of quotations that converted to completed sales
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Average Response Time</span>
+                      <span className="text-sm text-muted-foreground">{stats.conversionMetrics.avgResponseTime} days</span>
+                    </div>
+                    <div className="mt-2 h-2 w-full bg-secondary rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-primary"
+                        style={{ width: `${Math.min(stats.conversionMetrics.avgResponseTime / 5 * 100, 100)}%` }}
+                      />
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Average time from quotation to client decision
+                    </p>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Pending Quotation Value</span>
+                      <span className="text-sm text-muted-foreground">{formatCurrency(stats.quotationStats.pendingValue)}</span>
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Total value of pending quotations
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Company Performance */}
+            <Card className="col-span-1">
+              <CardHeader>
+                <CardTitle className="text-base">Company Quotation Values</CardTitle>
+                <CardDescription>Average quotation value by company</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {stats.avgQuoteValueByCompany.length > 0 ? (
+                    stats.avgQuoteValueByCompany.map((company, index) => (
+                      <div key={company.companyId || index} className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium text-sm">{company.companyName}</span>
+                          <span className="text-sm">{formatCurrency(company.avgValue)}</span>
+                        </div>
+                        <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-primary"
+                            style={{ 
+                              width: `${(company.avgValue / (stats.avgQuoteValueByCompany[0]?.avgValue || 1)) * 100}%` 
+                            }}
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {company.count} quotations
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No company data available
+                    </div>
+                  )}
+                </div>
+              </CardContent>
             </Card>
           </div>
         </div>
