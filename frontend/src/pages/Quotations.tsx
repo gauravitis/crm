@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useQuotations } from '../hooks/useQuotations';
+import { useCompanies } from '../hooks/useCompanies';
 import QuotationDetails from '../components/quotations/QuotationDetails';
 import { Quotation } from '../types';
 import { format } from 'date-fns';
-import { Search, Eye, Trash2, X, CheckCircle, XCircle, Edit, Download, Mail } from 'lucide-react';
+import { Search, Eye, Trash2, X, CheckCircle, XCircle, Edit, Download, Mail, Filter } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { emailService } from '../services/emailService';
@@ -14,16 +15,25 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "../components/ui/dialog";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue 
+} from "../components/ui/select";
 
 export default function Quotations() {
   const navigate = useNavigate();
   const { quotations, deleteQuotation, updateQuotation } = useQuotations();
+  const { activeCompanies } = useCompanies();
   const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('all');
   const [localQuotations, setLocalQuotations] = useState<Quotation[]>(quotations);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [emailQuotation, setEmailQuotation] = useState<Quotation | null>(null);
@@ -175,10 +185,16 @@ export default function Quotations() {
     }
   };
 
-  const filteredQuotations = localQuotations.filter(quotation => 
-    (quotation?.quotationRef?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
-    quotation?.billTo?.name?.toLowerCase()?.includes(searchTerm.toLowerCase())) ?? false
-  );
+  const filteredQuotations = localQuotations.filter(quotation => {
+    const matchesSearch = 
+      (quotation?.quotationRef?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
+       quotation?.billTo?.name?.toLowerCase()?.includes(searchTerm.toLowerCase())) ?? false;
+    
+    const matchesCompany = 
+      selectedCompanyId === 'all' || quotation.companyId === selectedCompanyId;
+    
+    return matchesSearch && matchesCompany;
+  });
 
   const statusColors = {
     PENDING: 'bg-gray-100 text-gray-800',
@@ -204,15 +220,35 @@ export default function Quotations() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Saved Quotations</h1>
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search by ref no. or client..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
-          />
-          <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+        <div className="flex items-center space-x-4">
+          <div className="w-48">
+            <Select
+              value={selectedCompanyId}
+              onValueChange={(value) => setSelectedCompanyId(value)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select Company" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Companies</SelectItem>
+                {activeCompanies.map((company) => (
+                  <SelectItem key={company.id} value={company.id}>
+                    {company.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search by ref no. or client..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
+            />
+            <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+          </div>
         </div>
       </div>
 
