@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuotations } from '../hooks/useQuotations';
 import { useCompanies } from '../hooks/useCompanies';
+import { useEmployees } from '../hooks/useEmployees';
 import QuotationDetails from '../components/quotations/QuotationDetails';
 import { Quotation } from '../types';
 import { format } from 'date-fns';
@@ -31,9 +32,11 @@ export default function Quotations() {
   const navigate = useNavigate();
   const { quotations, deleteQuotation, updateQuotation } = useQuotations();
   const { activeCompanies } = useCompanies();
+  const { employees } = useEmployees();
   const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('all');
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('all');
   const [localQuotations, setLocalQuotations] = useState<Quotation[]>(quotations);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [emailQuotation, setEmailQuotation] = useState<Quotation | null>(null);
@@ -193,7 +196,10 @@ export default function Quotations() {
     const matchesCompany = 
       selectedCompanyId === 'all' || quotation.companyId === selectedCompanyId;
     
-    return matchesSearch && matchesCompany;
+    const matchesEmployee = 
+      selectedEmployeeId === 'all' || quotation.employee?.id === selectedEmployeeId;
+    
+    return matchesSearch && matchesCompany && matchesEmployee;
   });
 
   const statusColors = {
@@ -239,6 +245,24 @@ export default function Quotations() {
               </SelectContent>
             </Select>
           </div>
+          <div className="w-48">
+            <Select
+              value={selectedEmployeeId}
+              onValueChange={(value) => setSelectedEmployeeId(value)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select Employee" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Employees</SelectItem>
+                {employees.map((employee) => (
+                  <SelectItem key={employee.id} value={employee.id}>
+                    {employee.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="relative">
             <input
               type="text"
@@ -276,6 +300,11 @@ export default function Quotations() {
                       <p className="text-sm text-gray-500">
                         Created: {format(new Date(quotation.createdAt), 'PP')}
                       </p>
+                      {quotation.employee && (
+                        <p className="text-sm text-gray-500">
+                          Created by: {quotation.employee.name}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center space-x-4">
