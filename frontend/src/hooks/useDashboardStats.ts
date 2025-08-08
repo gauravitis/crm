@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs, query, orderBy, limit, where, Timestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { startOfMonth, endOfMonth, subMonths, parseISO } from 'date-fns';
+import { startOfMonth, endOfMonth, subMonths, parseISO, subDays, startOfDay, endOfDay } from 'date-fns';
 
 // Add proper typings for the data from Firestore
 interface FirestoreClient {
@@ -10,6 +10,25 @@ interface FirestoreClient {
   email: string;
   createdAt: any;
   [key: string]: any;
+}
+
+// Helper function to parse Firebase date
+function parseFirebaseDate(date: any): Date {
+  if (!date) return new Date();
+  
+  if (date instanceof Timestamp) {
+    return date.toDate();
+  }
+  
+  if (typeof date === 'string') {
+    return parseISO(date);
+  }
+  
+  if (date.seconds) {
+    return new Date(date.seconds * 1000);
+  }
+  
+  return new Date(date);
 }
 
 interface FirestoreItem {
@@ -22,20 +41,14 @@ interface FirestoreItem {
 }
 
 interface FirestoreQuotation {
-  id: string;
+  id?: string;
   quotationRef: string;
-  billTo: {
-    name: string;
-    [key: string]: any;
-  };
-  companyId?: string;
-  company?: {
-    name: string;
-    [key: string]: any;
-  };
+  billTo: { name: string; [key: string]: any };
+  companyId: string;
+  company: { name: string; [key: string]: any };
+  createdAt: any;
   grandTotal: number;
   status: string;
-  createdAt: any;
   [key: string]: any;
 }
 
@@ -54,10 +67,18 @@ interface DashboardStats {
   };
   recentClients: Array<{ id: string; name: string; email: string; createdAt: Date }>;
   recentItems: Array<{ id: string; name: string; price: number; createdAt: Date }>;
-  recentQuotations: Array<{ id: string; ref: string; client: string; amount: number; status: string; date: Date }>;
+  recentQuotations: Array<{ 
+    id: string; 
+    ref: string; 
+    client: string; 
+    amount: number; 
+    status: string; 
+    date: Date;
+    companyId: string;
+  }>;
   totalInventoryValue: number;
-  revenueData: Array<{ date: string; amount: number }>;
-  quotationData: Array<{ date: string; count: number }>;
+  revenueData: Array<{ date: string; amount: number; comparisonAmount?: number }>;
+  quotationData: Array<{ date: string; count: number; comparisonCount?: number }>;
   recentTransactions: Array<{
     id: string;
     clientName: string;
@@ -92,17 +113,14 @@ interface DashboardStats {
     count: number;
     value: number;
   }>;
+  comparisonData: {
+    totalRevenue: number;
+    totalQuotations: number;
+    growth: number;
+  };
 }
 
-const parseFirebaseDate = (date: any): Date => {
-  if (!date) return new Date();
-  if (date instanceof Timestamp) return date.toDate();
-  if (typeof date === 'string') return parseISO(date);
-  if (date instanceof Date) return date;
-  return new Date();
-};
-
-export function useDashboardStats() {
+export function useDashboardStats(dateRange: string = '30', comparisonPeriod: string = 'previous') {
   const [stats, setStats] = useState<DashboardStats>({
     totalClients: 0,
     totalItems: 0,
@@ -135,6 +153,11 @@ export function useDashboardStats() {
     },
     avgQuoteValueByCompany: [],
     quotationStatusDistribution: [],
+    comparisonData: {
+      totalRevenue: 0,
+      totalQuotations: 0,
+      growth: 0
+    }
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -142,6 +165,29 @@ export function useDashboardStats() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
+        setLoading(true);
+        
+        // Define date ranges based on selected period
+        const now = new Date();
+        const daysToSubtract = parseInt(dateRange, 10);
+        
+        // Current period
+        const currentPeriodStart = startOfDay(subDays(now, daysToSubtract));
+        const currentPeriodEnd = endOfDay(now);
+        
+        // Comparison period
+        let comparisonPeriodStart, comparisonPeriodEnd;
+        
+        if (comparisonPeriod === 'previous') {
+          // Previous equal period
+          comparisonPeriodStart = startOfDay(subDays(currentPeriodStart, daysToSubtract));
+          comparisonPeriodEnd = endOfDay(subDays(currentPeriodStart, 1));
+        } else {
+          // Same period last year
+          comparisonPeriodStart = startOfDay(subDays(subDays(now, 365), daysToSubtract));
+          comparisonPeriodEnd = endOfDay(subDays(now, 365));
+        }
+        
         // Fetch clients
         const clientsSnapshot = await getDocs(collection(db, 'clients'));
         const totalClients = clientsSnapshot.size;
@@ -205,125 +251,232 @@ export function useDashboardStats() {
             status: data.status || 'PENDING'
           };
         });
+        
+        // Filter quotations for current period
+        const currentPeriodQuotations = allQuotations.filter(
+          q => q.createdAt >= currentPeriodStart && q.createdAt <= currentPeriodEnd
+        );
+        
+        // Filter quotations for comparison period
+        const comparisonPeriodQuotations = allQuotations.filter(
+          q => q.createdAt >= comparisonPeriodStart && q.createdAt <= comparisonPeriodEnd
+        );
 
-        // Calculate quotation statistics
-        const totalQuotations = allQuotations.length;
-        const pendingQuotations = allQuotations.filter(q => q.status === 'PENDING').length;
-        const completedQuotations = allQuotations.filter(q => q.status === 'COMPLETED').length;
-        const rejectedQuotations = allQuotations.filter(q => q.status === 'REJECTED').length;
+        // Calculate quotation statistics for current period
+        const totalQuotations = currentPeriodQuotations.length;
+        const pendingQuotations = currentPeriodQuotations.filter(q => q.status === 'PENDING').length;
+        const completedQuotations = currentPeriodQuotations.filter(q => q.status === 'COMPLETED').length;
+        const rejectedQuotations = currentPeriodQuotations.filter(q => q.status === 'REJECTED').length;
         
         // Calculate pending quotation value
-        const pendingValue = allQuotations
+        const pendingValue = currentPeriodQuotations
           .filter(q => q.status === 'PENDING')
           .reduce((sum, q) => sum + q.grandTotal, 0);
 
         // Get recent quotations
-        const recentQuotations = allQuotations.slice(0, 5).map(q => ({
+        const recentQuotations = currentPeriodQuotations.slice(0, 5).map(q => ({
           id: q.id,
           ref: q.quotationRef,
           client: q.billTo?.name || 'Unknown Client',
           amount: q.grandTotal,
           status: q.status,
-          date: q.createdAt
+          date: q.createdAt,
+          companyId: q.companyId || ''
         }));
 
-        // Quotation growth calculation
-        const now = new Date();
-        const thisMonthStart = startOfMonth(now);
-        const thisMonthEnd = endOfMonth(now);
-        const lastMonthStart = startOfMonth(subMonths(now, 1));
-        const lastMonthEnd = endOfMonth(subMonths(now, 1));
+        // Calculate growth (current vs comparison)
+        const comparisonTotalQuotations = comparisonPeriodQuotations.length;
+        const quotationGrowth = comparisonTotalQuotations === 0 ? 0 : 
+          ((totalQuotations - comparisonTotalQuotations) / comparisonTotalQuotations) * 100;
 
-        const thisMonthQuotations = allQuotations.filter(
-          q => q.createdAt >= thisMonthStart && q.createdAt <= thisMonthEnd
-        ).length;
+        // Calculate total revenue for current period
+        const totalRevenue = currentPeriodQuotations.reduce((sum, q) => sum + q.grandTotal, 0);
+        
+        // Calculate total revenue for comparison period
+        const comparisonTotalRevenue = comparisonPeriodQuotations.reduce((sum, q) => sum + q.grandTotal, 0);
+        
+        // Calculate growth rate (current vs comparison)
+        const growthRate = comparisonTotalRevenue === 0 ? 0 : 
+          ((totalRevenue - comparisonTotalRevenue) / comparisonTotalRevenue) * 100;
 
-        const lastMonthQuotations = allQuotations.filter(
-          q => q.createdAt >= lastMonthStart && q.createdAt <= lastMonthEnd
-        ).length;
-
-        const quotationGrowth = lastMonthQuotations === 0 ? 0 : 
-          ((thisMonthQuotations - lastMonthQuotations) / lastMonthQuotations) * 100;
-
-        // Quotation data for chart (last 6 months)
-        const quotationData = [];
-        for (let i = 5; i >= 0; i--) {
-          const monthDate = subMonths(now, i);
-          const monthStart = startOfMonth(monthDate);
-          const monthEnd = endOfMonth(monthDate);
-          
-          const monthQuotationCount = allQuotations
-            .filter(q => q.createdAt >= monthStart && q.createdAt <= monthEnd)
-            .length;
-
-          quotationData.push({
-            date: monthDate.toLocaleString('default', { month: 'short' }),
-            count: monthQuotationCount
-          });
+        // Determine the time unit for charts based on date range
+        let timeUnit = 'day';
+        let dataPoints = parseInt(dateRange, 10);
+        
+        if (dataPoints > 90) {
+          timeUnit = 'month';
+          dataPoints = Math.ceil(dataPoints / 30);
+        } else if (dataPoints > 14) {
+          timeUnit = 'week';
+          dataPoints = Math.ceil(dataPoints / 7);
         }
 
-        // Calculate total revenue and recent transactions
-        let totalRevenue = 0;
-        const recentTransactions: DashboardStats['recentTransactions'] = [];
-        
-        allQuotations.forEach(quotation => {
-          totalRevenue += quotation.grandTotal;
-          
-          recentTransactions.push({
-            id: quotation.id,
-            clientName: quotation.billTo?.name || 'Unknown Client',
-            amount: quotation.grandTotal,
-            date: quotation.createdAt,
-            status: 'completed'
-          });
-        });
-
-        // Calculate growth rate (comparing this month to last month)
-        const thisMonthRevenue = allQuotations
-          .filter(q => q.createdAt >= thisMonthStart && q.createdAt <= thisMonthEnd)
-          .reduce((sum, q) => sum + q.grandTotal, 0);
-
-        const lastMonthRevenue = allQuotations
-          .filter(q => q.createdAt >= lastMonthStart && q.createdAt <= lastMonthEnd)
-          .reduce((sum, q) => sum + q.grandTotal, 0);
-
-        const growthRate = lastMonthRevenue === 0 ? 0 : 
-          ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;
-
-        // Calculate revenue data for chart (last 6 months)
+        // Generate time-based data for charts
         const revenueData = [];
-        for (let i = 5; i >= 0; i--) {
-          const monthDate = subMonths(now, i);
-          const monthStart = startOfMonth(monthDate);
-          const monthEnd = endOfMonth(monthDate);
-          
-          const monthRevenue = allQuotations
-            .filter(q => q.createdAt >= monthStart && q.createdAt <= monthEnd)
-            .reduce((sum, q) => sum + q.grandTotal, 0);
-
-          revenueData.push({
-            date: monthDate.toLocaleString('default', { month: 'short' }),
-            amount: monthRevenue
-          });
+        const quotationData = [];
+        
+        if (timeUnit === 'day') {
+          // Daily data points
+          for (let i = dataPoints - 1; i >= 0; i--) {
+            const date = subDays(now, i);
+            const dateStart = startOfDay(date);
+            const dateEnd = endOfDay(date);
+            
+            // Current period data
+            const dayRevenue = currentPeriodQuotations
+              .filter(q => q.createdAt >= dateStart && q.createdAt <= dateEnd)
+              .reduce((sum, q) => sum + q.grandTotal, 0);
+              
+            const dayQuotationCount = currentPeriodQuotations
+              .filter(q => q.createdAt >= dateStart && q.createdAt <= dateEnd)
+              .length;
+              
+            // Comparison period data
+            const comparisonDate = comparisonPeriod === 'previous' 
+              ? subDays(date, dataPoints)
+              : subDays(date, 365);
+              
+            const comparisonDateStart = startOfDay(comparisonDate);
+            const comparisonDateEnd = endOfDay(comparisonDate);
+            
+            const comparisonDayRevenue = comparisonPeriodQuotations
+              .filter(q => q.createdAt >= comparisonDateStart && q.createdAt <= comparisonDateEnd)
+              .reduce((sum, q) => sum + q.grandTotal, 0);
+              
+            const comparisonDayQuotationCount = comparisonPeriodQuotations
+              .filter(q => q.createdAt >= comparisonDateStart && q.createdAt <= comparisonDateEnd)
+              .length;
+            
+            // Format the date
+            const formattedDate = date.toLocaleDateString('en-GB', { 
+              day: '2-digit',
+              month: 'short'
+            });
+            
+            revenueData.push({
+              date: formattedDate,
+              amount: dayRevenue,
+              comparisonAmount: comparisonDayRevenue
+            });
+            
+            quotationData.push({
+              date: formattedDate,
+              count: dayQuotationCount,
+              comparisonCount: comparisonDayQuotationCount
+            });
+          }
+        } else if (timeUnit === 'week') {
+          // Weekly data points
+          for (let i = 0; i < dataPoints; i++) {
+            const weekEnd = subDays(now, i * 7);
+            const weekStart = subDays(weekEnd, 6);
+            
+            // Current period data
+            const weekRevenue = currentPeriodQuotations
+              .filter(q => q.createdAt >= startOfDay(weekStart) && q.createdAt <= endOfDay(weekEnd))
+              .reduce((sum, q) => sum + q.grandTotal, 0);
+              
+            const weekQuotationCount = currentPeriodQuotations
+              .filter(q => q.createdAt >= startOfDay(weekStart) && q.createdAt <= endOfDay(weekEnd))
+              .length;
+              
+            // Comparison period data
+            const comparisonWeekEnd = comparisonPeriod === 'previous'
+              ? subDays(weekEnd, dataPoints * 7)
+              : subDays(weekEnd, 365);
+            const comparisonWeekStart = subDays(comparisonWeekEnd, 6);
+            
+            const comparisonWeekRevenue = comparisonPeriodQuotations
+              .filter(q => q.createdAt >= startOfDay(comparisonWeekStart) && q.createdAt <= endOfDay(comparisonWeekEnd))
+              .reduce((sum, q) => sum + q.grandTotal, 0);
+              
+            const comparisonWeekQuotationCount = comparisonPeriodQuotations
+              .filter(q => q.createdAt >= startOfDay(comparisonWeekStart) && q.createdAt <= endOfDay(comparisonWeekEnd))
+              .length;
+            
+            // Format the date range
+            const formattedDate = `${weekStart.toLocaleDateString('en-GB', { 
+              day: '2-digit',
+              month: 'short'
+            })} - ${weekEnd.toLocaleDateString('en-GB', { 
+              day: '2-digit',
+              month: 'short'
+            })}`;
+            
+            revenueData.push({
+              date: formattedDate,
+              amount: weekRevenue,
+              comparisonAmount: comparisonWeekRevenue
+            });
+            
+            quotationData.push({
+              date: formattedDate,
+              count: weekQuotationCount,
+              comparisonCount: comparisonWeekQuotationCount
+            });
+          }
+        } else { // month
+          // Monthly data points
+          for (let i = dataPoints - 1; i >= 0; i--) {
+            const monthDate = subMonths(now, i);
+            const monthStart = startOfMonth(monthDate);
+            const monthEnd = endOfMonth(monthDate);
+            
+            // Current period data
+            const monthRevenue = currentPeriodQuotations
+              .filter(q => q.createdAt >= monthStart && q.createdAt <= monthEnd)
+              .reduce((sum, q) => sum + q.grandTotal, 0);
+              
+            const monthQuotationCount = currentPeriodQuotations
+              .filter(q => q.createdAt >= monthStart && q.createdAt <= monthEnd)
+              .length;
+            
+            // Comparison period data
+            const comparisonMonthDate = comparisonPeriod === 'previous'
+              ? subMonths(monthDate, dataPoints)
+              : subMonths(monthDate, 12);
+            const comparisonMonthStart = startOfMonth(comparisonMonthDate);
+            const comparisonMonthEnd = endOfMonth(comparisonMonthDate);
+            
+            const comparisonMonthRevenue = comparisonPeriodQuotations
+              .filter(q => q.createdAt >= comparisonMonthStart && q.createdAt <= comparisonMonthEnd)
+              .reduce((sum, q) => sum + q.grandTotal, 0);
+              
+            const comparisonMonthQuotationCount = comparisonPeriodQuotations
+              .filter(q => q.createdAt >= comparisonMonthStart && q.createdAt <= comparisonMonthEnd)
+              .length;
+            
+            revenueData.push({
+              date: monthDate.toLocaleString('default', { month: 'short' }),
+              amount: monthRevenue,
+              comparisonAmount: comparisonMonthRevenue
+            });
+            
+            quotationData.push({
+              date: monthDate.toLocaleString('default', { month: 'short' }),
+              count: monthQuotationCount,
+              comparisonCount: comparisonMonthQuotationCount
+            });
+          }
         }
 
         // Calculate average order value
-        const averageOrderValue = allQuotations.length === 0 ? 0 :
-          totalRevenue / allQuotations.length;
+        const averageOrderValue = totalQuotations === 0 ? 0 :
+          totalRevenue / totalQuotations;
 
         // Calculate conversion metrics (quotations to sales)
-        const completedQuotationCount = allQuotations.filter(q => q.status === 'COMPLETED').length;
+        const completedQuotationCount = currentPeriodQuotations.filter(q => q.status === 'COMPLETED').length;
         const quotationToSalesRate = totalQuotations === 0 ? 0 : 
           (completedQuotationCount / totalQuotations) * 100;
         
-        // Assuming an average response time of 2 days for demonstration
-        // In a real scenario, this would be calculated from actual data
+        // Calculate average response time (from quotation to client decision)
+        // This is a placeholder - in a real system we would calculate from actual data
         const avgResponseTime = 2; // days
         
         // Calculate average quote value by company
         const companiesMap = new Map();
         
-        allQuotations.forEach(quotation => {
+        currentPeriodQuotations.forEach(quotation => {
           if (!quotation.companyId) return;
           
           const companyData = companiesMap.get(quotation.companyId) || { 
@@ -357,7 +510,7 @@ export function useDashboardStats() {
             status: 'COMPLETED',
             name: 'COMPLETED',
             count: completedQuotations,
-            value: allQuotations
+            value: currentPeriodQuotations
               .filter(q => q.status === 'COMPLETED')
               .reduce((sum, q) => sum + q.grandTotal, 0)
           },
@@ -365,7 +518,7 @@ export function useDashboardStats() {
             status: 'REJECTED',
             name: 'REJECTED',
             count: rejectedQuotations,
-            value: allQuotations
+            value: currentPeriodQuotations
               .filter(q => q.status === 'REJECTED')
               .reduce((sum, q) => sum + q.grandTotal, 0)
           }
@@ -391,7 +544,16 @@ export function useDashboardStats() {
           totalInventoryValue,
           revenueData,
           quotationData,
-          recentTransactions: recentTransactions.sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5),
+          recentTransactions: currentPeriodQuotations
+            .map(q => ({
+              id: q.id || '',
+              clientName: q.billTo?.name || 'Unknown Client',
+              amount: q.grandTotal,
+              date: q.createdAt,
+              status: 'completed' // This is a simplification
+            }))
+            .sort((a, b) => b.date.getTime() - a.date.getTime())
+            .slice(0, 5),
           topProducts: [], // This can be implemented later if needed
           salesMetrics: {
             growthRate,
@@ -404,6 +566,11 @@ export function useDashboardStats() {
           },
           avgQuoteValueByCompany,
           quotationStatusDistribution,
+          comparisonData: {
+            totalRevenue: comparisonTotalRevenue,
+            totalQuotations: comparisonTotalQuotations,
+            growth: growthRate
+          }
         });
       } catch (err) {
         console.error('Error fetching dashboard stats:', err);
@@ -414,7 +581,7 @@ export function useDashboardStats() {
     };
 
     fetchStats();
-  }, []);
+  }, [dateRange, comparisonPeriod]);
 
   return { stats, loading, error };
 }

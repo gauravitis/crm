@@ -1,0 +1,83 @@
+{
+  "quotations": {
+    "success": false,
+    "message": "Error processing quotations: Missing or insufficient permissions.",
+    "error": {
+      "code": "permission-denied",
+      "name": "FirebaseError"
+    },
+    "count": 0
+  },
+  "companies": {
+    "success": false,
+    "message": "Error processing companies: Missing or insufficient permissions.",
+    "error": {
+      "code": "permission-denied",
+      "name": "FirebaseError"
+    },
+    "count": 0
+  },
+  "clients": {
+    "success": false,
+    "message": "Error processing clients: Missing or insufficient permissions.",
+    "error": {
+      "code": "permission-denied",
+      "name": "FirebaseError"
+    },
+    "count": 0
+  },
+  "employees": {
+    "success": false,
+    "message": "Error processing employees: Missing or insufficient permissions.",
+    "error": {
+      "code": "permission-denied",
+      "name": "FirebaseError"
+    },
+    "count": 0
+  },
+  "items": {
+    "success": false,
+    "message": "Error processing items: Missing or insufficient permissions.",
+    "error": {
+      "code": "permission-denied",
+      "name": "FirebaseError"
+    },
+    "count": 0
+  },
+  "vendors": {
+    "success": false,
+    "message": "Error processing vendors: Missing or insufficient permissions.",
+    "error": {
+      "code": "permission-denied",
+      "name": "FirebaseError"
+    },
+    "count": 0
+  },
+  "invoices": {
+    "success": false,
+    "message": "Error processing invoices: Missing or insufficient permissions.",
+    "error": {
+      "code": "permission-denied",
+      "name": "FirebaseError"
+    },
+    "count": 0
+  },
+  "tasks": {
+    "success": false,
+    "message": "Error processing tasks: Missing or insufficient permissions.",
+    "error": {
+      "code": "permission-denied",
+      "name": "FirebaseError"
+    },
+    "count": 0
+  },
+  "counters": {
+    "success": false,
+    "message": "Error migrating counters: Missing or insufficient permissions.",
+    "error": {
+      "code": "permission-denied",
+      "name": "FirebaseError"
+    },
+    "count": 0
+  }
+}

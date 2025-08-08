@@ -43,11 +43,13 @@ interface Company {
 }
 
 export default function Dashboard() {
-  const { stats, loading, error } = useDashboardStats();
   const [dateRange, setDateRange] = useState('30'); // days
   const { companies } = useCompanies();
   const [selectedCompanyId, setSelectedCompanyId] = useState('all');
   const [comparisonPeriod, setComparisonPeriod] = useState('previous'); // 'previous', 'year'
+  
+  // Pass parameters to the dashboard stats hook
+  const { stats, loading, error } = useDashboardStats(dateRange, comparisonPeriod);
   
   // Filter active companies
   const activeCompanies = (companies?.filter(company => company.active !== false) || []) as Company[];
@@ -293,23 +295,25 @@ export default function Dashboard() {
                       {comparisonPeriod === 'previous' ? 'Previous' : 'Last Year'}
                     </p>
                     <p className="text-2xl font-bold text-muted-foreground">
-                      {formatCurrency(displayStats.totalRevenue * 0.8 || 0)}
+                      {formatCurrency(displayStats.comparisonData.totalRevenue || 0)}
                     </p>
                   </div>
                 </div>
                 <div className="h-2 w-full bg-secondary rounded-full overflow-hidden mb-2">
                   <div 
-                    className={`h-full ${displayStats.salesMetrics.growthRate >= 0 ? 'bg-green-500' : 'bg-red-500'}`}
-                    style={{ width: `${Math.min(Math.abs(displayStats.salesMetrics.growthRate), 100)}%` }}
+                    className={`h-full ${displayStats.comparisonData.growth >= 0 ? 'bg-green-500' : 'bg-red-500'}`}
+                    style={{ width: `${Math.min(Math.abs(displayStats.comparisonData.growth), 100)}%` }}
                   />
                 </div>
-                <p className="text-sm text-center">
-                  <span className={displayStats.salesMetrics.growthRate >= 0 ? 'text-green-500' : 'text-red-500'}>
-                    {displayStats.salesMetrics.growthRate >= 0 ? '↑' : '↓'} 
-                    {Math.abs(displayStats.salesMetrics.growthRate).toFixed(1)}%
-                  </span> 
-                  {comparisonPeriod === 'previous' ? ' from previous period' : ' compared to last year'}
-                </p>
+                <div className="flex justify-between items-center text-xs">
+                  <span className={displayStats.comparisonData.growth >= 0 ? "text-green-600" : "text-red-600"}>
+                    {displayStats.comparisonData.growth >= 0 ? "+" : ""}
+                    {displayStats.comparisonData.growth.toFixed(1)}%
+                  </span>
+                  <span className="text-muted-foreground">
+                    vs. {comparisonPeriod === 'previous' ? 'previous' : 'last year'}
+                  </span>
+                </div>
               </CardContent>
             </Card>
 
@@ -482,7 +486,7 @@ export default function Dashboard() {
                       dataKey="count"
                       label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
                     >
-                      {displayStats.quotationStatusDistribution.map((entry, index) => {
+                      {displayStats.quotationStatusDistribution.map((entry: any, index: number) => {
                         const COLORS = ['#FFB347', '#4BC0C0', '#FF6B6B']; // Orange, Teal, Red
                         return <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />;
                       })}
@@ -558,7 +562,7 @@ export default function Dashboard() {
               <CardContent>
                 <div className="space-y-4">
                   {displayStats.avgQuoteValueByCompany.length > 0 ? (
-                    displayStats.avgQuoteValueByCompany.map((company, index) => (
+                    displayStats.avgQuoteValueByCompany.map((company: any, index: number) => (
                       <div key={company.companyId || index} className="space-y-2">
                         <div className="flex justify-between items-center">
                           <span className="font-medium text-sm">{company.companyName}</span>
@@ -589,61 +593,54 @@ export default function Dashboard() {
         </div>
 
         {/* Quotation Chart */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Quotation Trends</CardTitle>
-            <CardDescription>Number of quotations generated per month</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={displayStats.quotationData}>
-                <defs>
-                  <linearGradient id="colorQuotations" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366F1" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#6366F1" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
-                <XAxis dataKey="date" className="text-xs" tickLine={false} axisLine={false} />
-                <YAxis className="text-xs" tickLine={false} axisLine={false} />
-                <Tooltip
-                  content={({ active, payload, label }) => {
-                    if (active && payload && payload.length) {
-                      return (
-                        <div className="rounded-lg border bg-background p-2 shadow-sm">
-                          <div className="grid grid-cols-2 gap-2">
-                            <div className="flex flex-col">
-                              <span className="text-[0.70rem] uppercase text-muted-foreground">Month</span>
-                              <span className="font-bold text-muted-foreground">{label}</span>
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="text-[0.70rem] uppercase text-muted-foreground">Quotations</span>
-                              <span className="font-bold text-indigo-600">{payload[0].value}</span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="count"
-                  fill="url(#colorQuotations)"
-                  stroke="#6366F1"
-                  strokeWidth={2}
-                />
-                <Bar 
-                  dataKey="count" 
-                  fill="#6366F1"
-                  opacity={0.2}
-                  radius={[4, 4, 0, 0]}
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4">Quotations Over Time</h2>
+          <Card>
+            <CardHeader>
+              <CardTitle>Quotation Trends</CardTitle>
+              <CardDescription>Number of quotations over time with comparison</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={displayStats.quotationData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip formatter={(value) => [value, 'Quotations']} />
+                    <Bar dataKey="count" name="Current Period" barSize={20} fill="#65A4FC" radius={[4, 4, 0, 0]} />
+                    <Line type="monotone" dataKey="comparisonCount" strokeWidth={2} name={comparisonPeriod === 'previous' ? 'Previous Period' : 'Last Year'} stroke="#F97316" dot={{ r: 3 }} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Revenue Chart */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4">Revenue Trends</h2>
+          <Card>
+            <CardHeader>
+              <CardTitle>Revenue Analysis</CardTitle>
+              <CardDescription>Revenue over time with comparison</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={displayStats.revenueData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip formatter={(value) => [formatCurrency(value), 'Revenue']} />
+                    <Bar dataKey="amount" name="Current Period" barSize={20} fill="#22C55E" radius={[4, 4, 0, 0]} />
+                    <Line type="monotone" dataKey="comparisonAmount" strokeWidth={2} name={comparisonPeriod === 'previous' ? 'Previous Period' : 'Last Year'} stroke="#F97316" dot={{ r: 3 }} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Recent Quotations */}
         <Card className="mb-8">
@@ -653,7 +650,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {displayStats.recentQuotations && displayStats.recentQuotations.map((quotation) => (
+              {displayStats.recentQuotations && displayStats.recentQuotations.map((quotation: any) => (
                 <div key={quotation.id} className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center 
@@ -778,7 +775,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {displayStats.recentTransactions?.map((transaction) => (
+                {displayStats.recentTransactions?.map((transaction: any) => (
                   <div key={transaction.id} className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">{transaction.clientName}</p>
@@ -809,7 +806,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {displayStats.topProducts?.map((product) => (
+                {displayStats.topProducts?.map((product: any) => (
                   <div key={product.id} className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">{product.name}</p>

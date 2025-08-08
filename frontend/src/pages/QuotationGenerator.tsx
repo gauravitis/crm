@@ -309,6 +309,7 @@ export default function QuotationGenerator() {
   const { companies } = useCompanies();
   
   const [isSaving, setIsSaving] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [quotationData, setQuotationData] = useState<Quotation>(() => {
     const savedData = localStorage.getItem(STORAGE_KEY);
     if (savedData) {
@@ -505,9 +506,12 @@ export default function QuotationGenerator() {
 
   const handleGenerateQuotation = async () => {
     try {
+      setIsGenerating(true);
+      
       // Validate company selection
       if (!quotationData.companyId) {
         toast.error('Please select a company for this quotation');
+        setIsGenerating(false);
         return;
       }
 
@@ -515,13 +519,15 @@ export default function QuotationGenerator() {
       const selectedCompany = companies.find(company => company.id === quotationData.companyId);
       if (!selectedCompany) {
         toast.error('Selected company not found');
+        setIsGenerating(false);
         return;
       }
 
       // Update quotation data with selected employee details
-      const documentData = {
+      const documentData: QuotationData = {
         ...quotationData,
         company: selectedCompany,
+        bankDetails: selectedCompany.bankDetails,
         employee: selectedEmployee ? {
           id: selectedEmployee.id,
           name: selectedEmployee.name,
@@ -535,18 +541,9 @@ export default function QuotationGenerator() {
         })),
       };
 
-      const { buffer, filename } = await generateWord(documentData);
+      const { blob, filename } = await generateWord(documentData);
       
-      // Convert buffer to base64 for storage
-      const base64Data = btoa(
-        new Uint8Array(buffer)
-          .reduce((data, byte) => data + String.fromCharCode(byte), '')
-      );
-
-      // Create blob and download
-      const blob = new Blob([buffer], { 
-        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
-      });
+      // Create a URL and download
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -561,14 +558,22 @@ export default function QuotationGenerator() {
         window.URL.revokeObjectURL(url);
       }, 100);
 
-      // Update quotationData with the document
-      setQuotationData(prev => ({
-        ...prev,
-        document: {
-          filename,
-          data: base64Data
-        }
-      }));
+      // Convert blob to base64 for storage
+      const reader = new FileReader();
+      let base64Data = '';
+      reader.onloadend = () => {
+        base64Data = reader.result?.toString().split(',')[1] || '';
+        
+        // Update quotationData with the document
+        setQuotationData(prev => ({
+          ...prev,
+          document: {
+            filename,
+            data: base64Data
+          }
+        }));
+      };
+      reader.readAsDataURL(blob);
 
       toast.success('Quotation generated successfully!');
       return { filename, base64Data };
@@ -576,6 +581,8 @@ export default function QuotationGenerator() {
       console.error('Error generating quotation:', error);
       toast.error('Error generating quotation');
       throw error;
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -622,13 +629,18 @@ export default function QuotationGenerator() {
 
       console.log('Document data prepared:', documentData);
 
-      const { buffer, filename } = await generateWord(documentData);
+      const { blob, filename } = await generateWord(documentData);
       console.log('Word document generated:', { filename });
       
-      // Convert buffer to base64 for storage
-      const base64Data = btoa(
-        new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
-      );
+      // Convert blob to base64 for storage
+      const base64Data = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = reader.result?.toString().split(',')[1] || '';
+          resolve(base64);
+        };
+        reader.readAsDataURL(blob);
+      });
 
       const quotationToSave: Quotation = {
         ...documentData,
@@ -1322,7 +1334,7 @@ export default function QuotationGenerator() {
                           className="text-base text-right min-w-[80px]"
                         />
                       </TableCell>
-                      <TableCell className="text-right font-medium">₹{item.discounted_value.toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-medium">₹{(item.discounted_value ?? 0).toFixed(2)}</TableCell>
                       <TableCell>
                         <Input
                           type="number"
@@ -1331,8 +1343,8 @@ export default function QuotationGenerator() {
                           className="text-base text-right min-w-[80px]"
                         />
                       </TableCell>
-                      <TableCell className="text-right font-medium">₹{item.gst_value.toFixed(2)}</TableCell>
-                      <TableCell className="text-right font-medium">₹{item.total_price.toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-medium">₹{(item.gst_value ?? 0).toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-medium">₹{(item.total_price ?? 0).toFixed(2)}</TableCell>
                       <TableCell>
                         <Input
                           type="text"
@@ -1363,22 +1375,22 @@ export default function QuotationGenerator() {
                 <TableFooter>
                   <TableRow>
                     <TableCell colSpan={10} className="text-right font-semibold">Sub Total:</TableCell>
-                    <TableCell className="text-right font-semibold">₹{quotationData.subTotal.toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-semibold">₹{(quotationData.subTotal ?? 0).toFixed(2)}</TableCell>
                     <TableCell colSpan={3}></TableCell>
                   </TableRow>
                   <TableRow>
                     <TableCell colSpan={10} className="text-right font-semibold">Tax:</TableCell>
-                    <TableCell className="text-right font-semibold">₹{quotationData.tax.toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-semibold">₹{(quotationData.tax ?? 0).toFixed(2)}</TableCell>
                     <TableCell colSpan={3}></TableCell>
                   </TableRow>
                   <TableRow>
                     <TableCell colSpan={10} className="text-right font-semibold">Round Off:</TableCell>
-                    <TableCell className="text-right font-semibold">₹{quotationData.roundOff.toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-semibold">₹{(quotationData.roundOff ?? 0).toFixed(2)}</TableCell>
                     <TableCell colSpan={3}></TableCell>
                   </TableRow>
                   <TableRow>
                     <TableCell colSpan={10} className="text-right font-semibold">Grand Total:</TableCell>
-                    <TableCell className="text-right font-semibold">₹{quotationData.grandTotal.toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-semibold">₹{(quotationData.grandTotal ?? 0).toFixed(2)}</TableCell>
                     <TableCell colSpan={3}></TableCell>
                   </TableRow>
                 </TableFooter>

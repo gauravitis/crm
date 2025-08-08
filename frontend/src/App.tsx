@@ -18,6 +18,9 @@ import Companies from './pages/Companies';
 import { AuthProvider } from './contexts/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
 import Login from './pages/Login';
+import MigrationTool from './components/MigrationTool';
+import MigrationStatus from './pages/MigrationStatus';
+import PostgresMigrationStatus from './pages/PostgresMigrationStatus';
 
 // Initialize QueryClient
 const queryClient = new QueryClient({
@@ -56,6 +59,9 @@ function App() {
                         <Route path="/pending-orders" element={<PendingOrders />} />
                         <Route path="/sales" element={<Sales />} />
                         <Route path="/companies" element={<Companies />} />
+                        <Route path="/migration" element={<MigrationTool />} />
+                        <Route path="/migration-status" element={<MigrationStatus />} />
+                        <Route path="/postgres-migration-status" element={<PostgresMigrationStatus />} />
                       </Routes>
                     </Layout>
                   </PrivateRoute>

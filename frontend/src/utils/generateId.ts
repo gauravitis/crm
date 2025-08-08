@@ -26,8 +26,24 @@ export async function getNextQuotationNumber(): Promise<number> {
     return result;
   } catch (error) {
     console.error('Error getting next quotation number:', error);
-    // Fallback to a timestamp-based number if transaction fails
-    return parseInt(Date.now().toString().slice(-3));
+    
+    // Generate a pseudorandom number that's still somewhat predictable
+    // for better UX in case of Firebase quota issues
+    
+    // Use the current date to generate a number between 1-999
+    const today = new Date();
+    const day = today.getDate(); // 1-31
+    const month = today.getMonth() + 1; // 1-12
+    const minutes = today.getMinutes(); // 0-59
+    const seconds = today.getSeconds(); // 0-59
+    
+    // Combine these values to create a somewhat random but repeatable number
+    // This helps generate different numbers when generating multiple quotations
+    // during quota issues
+    const baseNumber = (day * month * 10) + (minutes + seconds) % 900;
+    
+    // Ensure the number is between 1-999
+    return Math.max(1, Math.min(999, baseNumber));
   }
 }
 

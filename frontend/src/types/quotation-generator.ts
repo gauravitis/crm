@@ -3,6 +3,7 @@ export interface QuotationTemplate {
   name: string;
   description?: string;
   format: 'pdf' | 'docx';
+  previewUrl?: string;
 }
 
 export interface QuotationFormData {
@@ -77,6 +78,8 @@ import { Company } from './company';
 export interface QuotationData {
   billTo: {
     name: string;
+    company?: string;
+    contactPerson?: string;
     address: string;
     phone: string;
     email: string;
@@ -97,9 +100,12 @@ export interface QuotationData {
   items: QuotationProduct[];
   subTotal: number;
   tax: number;
+  roundOff: number;
   grandTotal: number;
   notes: string;
   paymentTerms: string;
+  deliveryTerms?: string;
+  validityPeriod?: string;
   bankDetails: {
     bankName: string;
     accountNo: string;

@@ -148,7 +148,19 @@ export default function QuotationPreview({ data, onEdit, onDownload }: Quotation
           Download PDF
         </button>
         <button
-          onClick={() => generateWord(data)}
+          onClick={() => generateWord(data).then(({ blob, filename }) => {
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            setTimeout(() => {
+              document.body.removeChild(link);
+              window.URL.revokeObjectURL(url);
+            }, 100);
+          }).catch(error => console.error('Error generating Word document:', error))}
           className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700"
         >
           Download DOCX
