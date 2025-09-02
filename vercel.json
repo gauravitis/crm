@@ -1,16 +1,19 @@
 {
   "version": 2,
-  "buildCommand": "cd frontend && npm install && npm run build",
+  "buildCommand": "cd frontend && npm ci && npm run build",
   "outputDirectory": "frontend/dist",
-  "installCommand": "cd frontend && npm install",
+  "installCommand": "cd frontend && npm ci",
+  "framework": "vite",
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "https://crm-api-xi.vercel.app/api/:path*"
-    },
+      "source": "/api/(.*)",
+      "destination": "https://crm-api-xi.vercel.app/api/$1"
+    }
+  ],
+  "routes": [
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
